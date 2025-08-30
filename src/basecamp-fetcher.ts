@@ -170,7 +170,9 @@ export class BasecampFetcher {
   }
 
   private async startLocalCallbackServer(): Promise<{ code: string }> {
-    const urlObj = new URL(this.REDIRECT_URI!);
+    const redirectUri = this.REDIRECT_URI;
+    if (!redirectUri) throw new Error('Missing env BASECAMP_REDIRECT_URI');
+    const urlObj = new URL(redirectUri);
     const port = Number(urlObj.port || 80);
     return new Promise((resolve, reject) => {
       const server = http.createServer((req, res) => {
@@ -232,11 +234,14 @@ export class BasecampFetcher {
   }
 
   private async oauthTokenFromCode(code: string): Promise<TokenResponse> {
+    if (!this.CLIENT_ID || !this.CLIENT_SECRET || !this.REDIRECT_URI) {
+      throw new Error('Missing OAuth env: BASECAMP_CLIENT_ID/SECRET/REDIRECT_URI');
+    }
     const body = new URLSearchParams({
       type: 'web_server',
-      client_id: this.CLIENT_ID!,
-      redirect_uri: this.REDIRECT_URI!,
-      client_secret: this.CLIENT_SECRET!,
+      client_id: this.CLIENT_ID,
+      redirect_uri: this.REDIRECT_URI,
+      client_secret: this.CLIENT_SECRET,
       code,
     });
     const res = await fetch(`${this.LAUNCHPAD}/authorization/token`, {
@@ -249,11 +254,14 @@ export class BasecampFetcher {
   }
 
   private async oauthRefresh(refreshToken: string): Promise<TokenResponse> {
+    if (!this.CLIENT_ID || !this.CLIENT_SECRET || !this.REDIRECT_URI) {
+      throw new Error('Missing OAuth env: BASECAMP_CLIENT_ID/SECRET/REDIRECT_URI');
+    }
     const body = new URLSearchParams({
       type: 'refresh',
-      client_id: this.CLIENT_ID!,
-      redirect_uri: this.REDIRECT_URI!,
-      client_secret: this.CLIENT_SECRET!,
+      client_id: this.CLIENT_ID,
+      redirect_uri: this.REDIRECT_URI,
+      client_secret: this.CLIENT_SECRET,
       refresh_token: refreshToken,
     });
     const res = await fetch(`${this.LAUNCHPAD}/authorization/token`, {
@@ -333,7 +341,10 @@ export class BasecampFetcher {
 
     const kanbanEntries = project.dock?.filter(d => d.name === 'kanban_board' && d.enabled) ?? [];
     const selectedKanban = options.tableName
-      ? kanbanEntries.find(d => d.title?.toLowerCase() === options.tableName!.toLowerCase())
+      ? (() => {
+          const tn = options.tableName as string; // guarded by ternary condition
+          return kanbanEntries.find(d => d.title?.toLowerCase() === tn.toLowerCase());
+        })()
       : kanbanEntries[0];
 
     if (options.tableName && !selectedKanban) {

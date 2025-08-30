@@ -29,10 +29,10 @@
         "prepare": "npm run build",
         "example": "tsx examples/basic-usage.ts",
         "example:js": "node examples/basic-usage.js",
-    "example:mcp": "tsx examples/mcp-usage.ts",
-    "example:mcp-client": "node examples/mcp-client.mjs",
-    "setup-mcp": "node scripts/setup-mcp.js"
-  },
+        "example:mcp": "tsx examples/mcp-usage.ts",
+        "example:mcp-client": "node examples/mcp-client.mjs",
+        "setup-mcp": "node scripts/setup-mcp.js"
+    },
     "keywords": [
         "basecamp",
         "cli",

@@ -28,7 +28,7 @@ export class TodosResource {
 
   list(projectId: number, todolistId: number, params: ListTodosParams = {}) {
     return this.client.get<Todo[]>(`/buckets/${projectId}/todolists/${todolistId}/todos.json`, {
-      query: params as any,
+      query: params as Record<string, string | number | boolean | undefined>,
     });
   }
 

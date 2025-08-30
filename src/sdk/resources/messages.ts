@@ -7,7 +7,7 @@ export class MessagesResource {
   list(projectId: number, boardId: number, params: { page?: number } = {}) {
     return this.client.get<Message[]>(
       `/buckets/${projectId}/message_boards/${boardId}/messages.json`,
-      { query: params as any }
+      { query: params as Record<string, string | number | boolean | undefined> }
     );
   }
 

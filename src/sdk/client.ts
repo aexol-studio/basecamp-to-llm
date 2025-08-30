@@ -31,6 +31,22 @@ export class BasecampClient {
     }
   }
 
+  private get userAgent(): string {
+    const ua = this.USER_AGENT;
+    if (!ua) throw new Error('Missing env BASECAMP_USER_AGENT');
+    return ua;
+  }
+
+  private getOAuthEnv(): { clientId: string; clientSecret: string; redirectUri: string } {
+    const clientId = this.CLIENT_ID;
+    const clientSecret = this.CLIENT_SECRET;
+    const redirectUri = this.REDIRECT_URI;
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error('Missing OAuth env: BASECAMP_CLIENT_ID/SECRET/REDIRECT_URI');
+    }
+    return { clientId, clientSecret, redirectUri };
+  }
+
   // Public, generic request covering the entire Basecamp API surface
   public async request<T = unknown>(
     method: HttpMethod,
@@ -43,7 +59,7 @@ export class BasecampClient {
     const url = this.buildUrl(apiPath, options.query, !!options.absolute, accountId);
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token.access_token}`,
-      'User-Agent': this.USER_AGENT!,
+      'User-Agent': this.userAgent,
       Accept: 'application/json',
       ...(options.headers || {}),
     };
@@ -139,7 +155,8 @@ export class BasecampClient {
   }
 
   private async startLocalCallbackServer(): Promise<{ code: string }> {
-    const urlObj = new URL(this.REDIRECT_URI!);
+    const { redirectUri } = this.getOAuthEnv();
+    const urlObj = new URL(redirectUri);
     const port = Number(urlObj.port || 80);
     return new Promise((resolve, reject) => {
       const server = http.createServer((req, res) => {
@@ -177,11 +194,12 @@ export class BasecampClient {
   }
 
   private async oauthTokenFromCode(code: string): Promise<TokenResponse> {
+    const { clientId, clientSecret, redirectUri } = this.getOAuthEnv();
     const body = new URLSearchParams({
       type: 'web_server',
-      client_id: this.CLIENT_ID!,
-      redirect_uri: this.REDIRECT_URI!,
-      client_secret: this.CLIENT_SECRET!,
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      client_secret: clientSecret,
       code,
     });
     const res = await fetch(`${this.LAUNCHPAD}/authorization/token`, {
@@ -194,11 +212,12 @@ export class BasecampClient {
   }
 
   private async oauthRefresh(refreshToken: string): Promise<TokenResponse> {
+    const { clientId, clientSecret, redirectUri } = this.getOAuthEnv();
     const body = new URLSearchParams({
       type: 'refresh',
-      client_id: this.CLIENT_ID!,
-      redirect_uri: this.REDIRECT_URI!,
-      client_secret: this.CLIENT_SECRET!,
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      client_secret: clientSecret,
       refresh_token: refreshToken,
     });
     const res = await fetch(`${this.LAUNCHPAD}/authorization/token`, {
@@ -211,12 +230,10 @@ export class BasecampClient {
   }
 
   private async oauthAuthorize(openBrowserFlag: boolean): Promise<string> {
-    if (!this.CLIENT_ID || !this.CLIENT_SECRET || !this.REDIRECT_URI) {
-      throw new Error('Missing OAuth env: BASECAMP_CLIENT_ID/SECRET/REDIRECT_URI');
-    }
+    const { clientId, redirectUri } = this.getOAuthEnv();
     const url = `${this.LAUNCHPAD}/authorization/new?type=web_server&client_id=${encodeURIComponent(
-      this.CLIENT_ID
-    )}&redirect_uri=${encodeURIComponent(this.REDIRECT_URI)}`;
+      clientId
+    )}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     if (openBrowserFlag) await this.openUrl(url);
     try {
       const { code } = await this.startLocalCallbackServer();

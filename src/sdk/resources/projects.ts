@@ -10,7 +10,9 @@ export class ProjectsResource {
   constructor(private readonly client: BasecampClient) {}
 
   list(params: ListProjectsParams = {}) {
-    return this.client.get<Project[]>('/projects.json', { query: params as any });
+    return this.client.get<Project[]>('/projects.json', {
+      query: params as Record<string, string | number | boolean | undefined>,
+    });
   }
 
   get(projectId: number) {

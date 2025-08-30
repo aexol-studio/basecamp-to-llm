@@ -56,7 +56,8 @@ describe('MCP Server Functionality', () => {
     });
 
     it('should handle empty project list', async () => {
-      const mockProjects: any[] = [];
+      type TestProject = { id: number; name: string; archived: boolean };
+      const mockProjects: TestProject[] = [];
 
       mockListProjects.mockResolvedValue(mockProjects);
 
@@ -114,7 +115,7 @@ describe('MCP Server Functionality', () => {
         projectName: 'Test Project',
       };
 
-      const outputPath = (args as any).outputPath;
+      const outputPath = (args as { outputPath?: string }).outputPath;
       const outputFile = outputPath || '.codex/tasks.json';
       const markdownFile = outputPath?.replace('.json', '.md') || '.codex/tasks.md';
 
@@ -125,8 +126,8 @@ describe('MCP Server Functionality', () => {
 
   describe('handleAuthenticate', () => {
     it('should call authenticate with default openBrowser true', async () => {
-      const args = {};
-      const openBrowser = (args as any).openBrowser ?? true;
+      const args = {} as { openBrowser?: boolean };
+      const openBrowser = args.openBrowser ?? true;
 
       expect(openBrowser).toBe(true);
 

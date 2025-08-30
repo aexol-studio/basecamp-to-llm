@@ -6,12 +6,15 @@ import { PeopleResource } from './resources/people.js';
 import { MessagesResource } from './resources/messages.js';
 import { CommentsResource } from './resources/comments.js';
 
-export type ActionHandler = (client: BasecampClient, args: any) => Promise<unknown>;
+export type ActionHandler = (
+  client: BasecampClient,
+  args: Record<string, unknown>
+) => Promise<unknown>;
 
 export interface ActionDef {
   name: string; // e.g. projects.list
   description: string;
-  schema: Record<string, any>; // JSON schema-like input description
+  schema: Record<string, unknown>; // JSON schema-like input description
   handler: ActionHandler;
 }
 
@@ -23,7 +26,10 @@ function projectsList(): ActionDef {
       type: 'object',
       properties: { status: { type: 'string' }, page: { type: 'number' } },
     },
-    handler: async (client, args) => new ProjectsResource(client).list(args || {}),
+    handler: async (client, args) =>
+      new ProjectsResource(client).list(
+        (args as { status?: 'archived' | 'trashed'; page?: number }) || {}
+      ),
   };
 }
 
@@ -36,7 +42,8 @@ function projectsGet(): ActionDef {
       properties: { projectId: { type: 'number' } },
       required: ['projectId'],
     },
-    handler: async (client, { projectId }) => new ProjectsResource(client).get(projectId),
+    handler: async (client, args) =>
+      new ProjectsResource(client).get((args as { projectId: number }).projectId),
   };
 }
 
@@ -55,8 +62,12 @@ function todosList(): ActionDef {
       },
       required: ['projectId', 'listId'],
     },
-    handler: async (client, { projectId, listId, ...params }) =>
-      new TodosResource(client).list(projectId, listId, params),
+    handler: async (client, args) =>
+      new TodosResource(client).list(
+        (args as { projectId: number; listId: number }).projectId,
+        (args as { projectId: number; listId: number }).listId,
+        (args as { status?: 'archived' | 'trashed'; completed?: boolean; page?: number }) || {}
+      ),
   };
 }
 
@@ -69,8 +80,11 @@ function todosGet(): ActionDef {
       properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
       required: ['projectId', 'todoId'],
     },
-    handler: async (client, { projectId, todoId }) =>
-      new TodosResource(client).get(projectId, todoId),
+    handler: async (client, args) =>
+      new TodosResource(client).get(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
   };
 }
 
@@ -83,8 +97,11 @@ function cardTablesGet(): ActionDef {
       properties: { projectId: { type: 'number' }, tableId: { type: 'number' } },
       required: ['projectId', 'tableId'],
     },
-    handler: async (client, { projectId, tableId }) =>
-      new CardTablesResource(client).get(projectId, tableId),
+    handler: async (client, args) =>
+      new CardTablesResource(client).get(
+        (args as { projectId: number; tableId: number }).projectId,
+        (args as { projectId: number; tableId: number }).tableId
+      ),
   };
 }
 
@@ -110,8 +127,15 @@ function messagesList(): ActionDef {
       },
       required: ['projectId', 'boardId'],
     },
-    handler: async (client, { projectId, boardId, page }) =>
-      new MessagesResource(client).list(projectId, boardId, { page }),
+    handler: async (client, args) => {
+      const page = (args as { page?: number }).page;
+      const params = page === undefined ? {} : { page };
+      return new MessagesResource(client).list(
+        (args as { projectId: number; boardId: number }).projectId,
+        (args as { projectId: number; boardId: number }).boardId,
+        params
+      );
+    },
   };
 }
 
@@ -124,8 +148,11 @@ function commentsListForRecording(): ActionDef {
       properties: { projectId: { type: 'number' }, recordingId: { type: 'number' } },
       required: ['projectId', 'recordingId'],
     },
-    handler: async (client, { projectId, recordingId }) =>
-      new CommentsResource(client).listForRecording(projectId, recordingId),
+    handler: async (client, args) =>
+      new CommentsResource(client).listForRecording(
+        (args as { projectId: number; recordingId: number }).projectId,
+        (args as { projectId: number; recordingId: number }).recordingId
+      ),
   };
 }
 
@@ -141,8 +168,8 @@ export const actions: ActionDef[] = [
       properties: { name: { type: 'string' }, description: { type: 'string' } },
       required: ['name'],
     },
-    handler: async (client, { name, description }) =>
-      new ProjectsResource(client).create({ name, description }),
+    handler: async (client, args) =>
+      new ProjectsResource(client).create(args as { name: string; description?: string }),
   },
   {
     name: 'projects.update',
@@ -156,8 +183,11 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId'],
     },
-    handler: async (client, { projectId, ...fields }) =>
-      new ProjectsResource(client).update(projectId, fields),
+    handler: async (client, args) =>
+      new ProjectsResource(client).update(
+        (args as { projectId: number }).projectId,
+        args as Partial<{ name: string; description: string }>
+      ),
   },
   {
     name: 'projects.trash',
@@ -167,7 +197,8 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' } },
       required: ['projectId'],
     },
-    handler: async (client, { projectId }) => new ProjectsResource(client).trash(projectId),
+    handler: async (client, args) =>
+      new ProjectsResource(client).trash((args as { projectId: number }).projectId),
   },
   todosList(),
   todosGet(),
@@ -188,8 +219,18 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'listId', 'content'],
     },
-    handler: async (client, { projectId, listId, ...body }) =>
-      new TodosResource(client).create(projectId, listId, body),
+    handler: async (client, args) =>
+      new TodosResource(client).create(
+        (args as { projectId: number; listId: number }).projectId,
+        (args as { projectId: number; listId: number }).listId,
+        args as {
+          content: string;
+          description?: string;
+          due_on?: string | null;
+          starts_on?: string | null;
+          assignee_ids?: number[];
+        }
+      ),
   },
   {
     name: 'todos.update',
@@ -207,8 +248,18 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'todoId'],
     },
-    handler: async (client, { projectId, todoId, ...fields }) =>
-      new TodosResource(client).update(projectId, todoId, fields),
+    handler: async (client, args) =>
+      new TodosResource(client).update(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId,
+        args as Partial<{
+          content: string;
+          description: string | null;
+          due_on: string | null;
+          starts_on: string | null;
+          assignee_ids: number[];
+        }>
+      ),
   },
   {
     name: 'todos.complete',
@@ -218,8 +269,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
       required: ['projectId', 'todoId'],
     },
-    handler: async (client, { projectId, todoId }) =>
-      new TodosResource(client).complete(projectId, todoId),
+    handler: async (client, args) =>
+      new TodosResource(client).complete(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
   },
   {
     name: 'todos.uncomplete',
@@ -229,8 +283,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
       required: ['projectId', 'todoId'],
     },
-    handler: async (client, { projectId, todoId }) =>
-      new TodosResource(client).uncomplete(projectId, todoId),
+    handler: async (client, args) =>
+      new TodosResource(client).uncomplete(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
   },
   cardTablesGet(),
   {
@@ -241,8 +298,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, columnId: { type: 'number' } },
       required: ['projectId', 'columnId'],
     },
-    handler: async (client, { projectId, columnId }) =>
-      new CardTablesResource(client).getColumn(projectId, columnId),
+    handler: async (client, args) =>
+      new CardTablesResource(client).getColumn(
+        (args as { projectId: number; columnId: number }).projectId,
+        (args as { projectId: number; columnId: number }).columnId
+      ),
   },
   {
     name: 'card_tables.get_card',
@@ -252,8 +312,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, cardId: { type: 'number' } },
       required: ['projectId', 'cardId'],
     },
-    handler: async (client, { projectId, cardId }) =>
-      new CardTablesResource(client).getCard(projectId, cardId),
+    handler: async (client, args) =>
+      new CardTablesResource(client).getCard(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId
+      ),
   },
   {
     name: 'card_tables.create_card',
@@ -268,8 +331,12 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'columnId', 'title'],
     },
-    handler: async (client, { projectId, columnId, ...body }) =>
-      new CardTablesResource(client).createCard(projectId, columnId, body),
+    handler: async (client, args) =>
+      new CardTablesResource(client).createCard(
+        (args as { projectId: number; columnId: number }).projectId,
+        (args as { projectId: number; columnId: number }).columnId,
+        args as { title: string; description?: string }
+      ),
   },
   peopleList(),
   {
@@ -280,7 +347,8 @@ export const actions: ActionDef[] = [
       properties: { personId: { type: 'number' } },
       required: ['personId'],
     },
-    handler: async (client, { personId }) => new PeopleResource(client).get(personId),
+    handler: async (client, args) =>
+      new PeopleResource(client).get((args as { personId: number }).personId),
   },
   messagesList(),
   {
@@ -291,8 +359,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, messageId: { type: 'number' } },
       required: ['projectId', 'messageId'],
     },
-    handler: async (client, { projectId, messageId }) =>
-      new MessagesResource(client).get(projectId, messageId),
+    handler: async (client, args) =>
+      new MessagesResource(client).get(
+        (args as { projectId: number; messageId: number }).projectId,
+        (args as { projectId: number; messageId: number }).messageId
+      ),
   },
   {
     name: 'messages.create',
@@ -307,8 +378,15 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'boardId', 'subject', 'content'],
     },
-    handler: async (client, { projectId, boardId, subject, content }) =>
-      new MessagesResource(client).create(projectId, boardId, { subject, content }),
+    handler: async (client, args) =>
+      new MessagesResource(client).create(
+        (args as { projectId: number; boardId: number }).projectId,
+        (args as { projectId: number; boardId: number }).boardId,
+        {
+          subject: (args as { subject: string }).subject,
+          content: (args as { content: string }).content,
+        }
+      ),
   },
   commentsListForRecording(),
   {
@@ -319,8 +397,11 @@ export const actions: ActionDef[] = [
       properties: { projectId: { type: 'number' }, commentId: { type: 'number' } },
       required: ['projectId', 'commentId'],
     },
-    handler: async (client, { projectId, commentId }) =>
-      new CommentsResource(client).get(projectId, commentId),
+    handler: async (client, args) =>
+      new CommentsResource(client).get(
+        (args as { projectId: number; commentId: number }).projectId,
+        (args as { projectId: number; commentId: number }).commentId
+      ),
   },
   {
     name: 'comments.create',
@@ -334,8 +415,12 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'recordingId', 'content'],
     },
-    handler: async (client, { projectId, recordingId, content }) =>
-      new CommentsResource(client).create(projectId, recordingId, { content }),
+    handler: async (client, args) =>
+      new CommentsResource(client).create(
+        (args as { projectId: number; recordingId: number }).projectId,
+        (args as { projectId: number; recordingId: number }).recordingId,
+        { content: (args as { content: string }).content }
+      ),
   },
   {
     name: 'comments.update',
@@ -349,7 +434,11 @@ export const actions: ActionDef[] = [
       },
       required: ['projectId', 'commentId', 'content'],
     },
-    handler: async (client, { projectId, commentId, content }) =>
-      new CommentsResource(client).update(projectId, commentId, { content }),
+    handler: async (client, args) =>
+      new CommentsResource(client).update(
+        (args as { projectId: number; commentId: number }).projectId,
+        (args as { projectId: number; commentId: number }).commentId,
+        { content: (args as { content: string }).content }
+      ),
   },
 ];

@@ -4,7 +4,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { BasecampFetcher } from './basecamp-fetcher.js';
-import { BasecampClient } from './sdk/client.js';
+import { BasecampClient, type HttpMethod, type RequestOptions } from './sdk/client.js';
 import { actions as sdkActions } from './sdk/registry.js';
 
 export class BasecampMCPServer {
@@ -148,16 +148,33 @@ export class BasecampMCPServer {
             return await this.handleListProjects();
 
           case 'fetch_todos':
-            return await this.handleFetchTodos(args as any);
+            return await this.handleFetchTodos(
+              (args as {
+                projectName: string;
+                tableName?: string;
+                columnName?: string;
+                outputPath?: string;
+              }) || { projectName: '' }
+            );
 
           case 'authenticate':
-            return await this.handleAuthenticate(args as any);
+            return await this.handleAuthenticate((args as { openBrowser?: boolean }) || {});
 
           case 'get_project_info':
-            return await this.handleGetProjectInfo(args as any);
+            return await this.handleGetProjectInfo(
+              (args as { projectName: string }) || { projectName: '' }
+            );
 
           case 'api_request':
-            return await this.handleApiRequest(args as any);
+            return await this.handleApiRequest(
+              (args as {
+                method: string;
+                path: string;
+                query?: Record<string, unknown>;
+                body?: unknown;
+                absolute?: boolean;
+              }) || { method: 'GET', path: '' }
+            );
 
           default:
             if (name?.startsWith('sdk:')) {
@@ -165,7 +182,7 @@ export class BasecampMCPServer {
               const def = sdkActions.find(a => a.name === actionName);
               if (!def) throw new Error(`Unknown SDK action: ${actionName}`);
               const client = new BasecampClient();
-              const res = await def.handler(client, (args as any) || {});
+              const res = await def.handler(client, (args as Record<string, unknown>) ?? {});
               return {
                 content: [
                   {
@@ -213,11 +230,12 @@ export class BasecampMCPServer {
     absolute?: boolean;
   }) {
     const client = new BasecampClient();
-    const res = await client.request(args.method.toUpperCase() as any, args.path, {
-      query: args.query as any,
-      body: args.body,
-      absolute: !!args.absolute,
-    });
+    const method = args.method.toUpperCase() as HttpMethod;
+    type QueryParams = Record<string, string | number | boolean | undefined>;
+    const reqOptions: RequestOptions = { absolute: !!args.absolute };
+    if (args.query) reqOptions.query = args.query as QueryParams;
+    if (args.body !== undefined) reqOptions.body = args.body;
+    const res = await client.request(method, args.path, reqOptions);
     const text = typeof res === 'string' ? res : JSON.stringify(res, null, 2);
     return {
       content: [
@@ -332,9 +350,7 @@ export class BasecampMCPServer {
 // Run the server if this file is executed directly (ESM-compatible)
 try {
   const invokedPath = process.argv?.[1];
-  const isDirect = invokedPath
-    ? new URL(`file://${invokedPath}`).href === import.meta.url
-    : false;
+  const isDirect = invokedPath ? new URL(`file://${invokedPath}`).href === import.meta.url : false;
   if (isDirect) {
     const server = new BasecampMCPServer();
     server.run().catch(error => {

@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { BasecampFetcher } from './basecamp-fetcher.js';
-import { BasecampClient } from './sdk/client.js';
+import { BasecampClient, type HttpMethod, type RequestOptions } from './sdk/client.js';
 import { actions as sdkActions } from './sdk/registry.js';
 
 const program = new Command();
@@ -98,18 +98,19 @@ program
   .action(async (method: string, apiPath: string, options) => {
     try {
       const client = new BasecampClient();
-      const query = options.query ? JSON.parse(options.query) : undefined;
-      const body = options.data ? JSON.parse(options.data) : undefined;
+      const query = options.query
+        ? (JSON.parse(options.query) as RequestOptions['query'])
+        : undefined;
+      const body = options.data ? (JSON.parse(options.data) as unknown) : undefined;
       const m = String(method || '').toUpperCase();
       const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'] as const;
-      if (!allowed.includes(m as any)) {
-        throw new Error(`Invalid method: ${method}`);
-      }
-      const res = await client.request(m as any, apiPath, {
-        query,
-        body,
-        absolute: !!options.absolute,
-      } as any);
+      const isHttpMethod = (x: string): x is HttpMethod =>
+        (allowed as readonly string[]).includes(x);
+      if (!isHttpMethod(m)) throw new Error(`Invalid method: ${method}`);
+      const requestOptions: RequestOptions = { absolute: !!options.absolute };
+      if (query) requestOptions.query = query;
+      if (body !== undefined) requestOptions.body = body;
+      const res = await client.request(m, apiPath, requestOptions);
       const out = typeof res === 'string' ? res : JSON.stringify(res, null, 2);
       console.log(out);
     } catch (error) {
