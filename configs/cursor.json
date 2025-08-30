@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+        "basecamp": {
+            "command": "npx",
+            "args": [
+                "@aexol-studio/basecamp-to-llm",
+                "mcp"
+            ],
+            "env": {
+                "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
+                "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
+                "BASECAMP_REDIRECT_URI": "${env:BASECAMP_REDIRECT_URI}",
+                "BASECAMP_USER_AGENT": "${env:BASECAMP_USER_AGENT}"
+            }
+        }
+    }
+}
