@@ -12,6 +12,8 @@ import path from 'node:path';
 export class BasecampMCPServer {
   private server: Server;
   private fetcher?: BasecampFetcher;
+  private safeToOriginal = new Map<string, string>();
+  private originalToSafe = new Map<string, string>();
 
   constructor() {
     this.server = new Server({
@@ -34,6 +36,27 @@ export class BasecampMCPServer {
   private setupTools(): void {
     // List projects tool
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      // Build MCP-safe names for SDK actions (no colon or dot)
+      this.safeToOriginal.clear();
+      this.originalToSafe.clear();
+      const toSafe = (raw: string): string => {
+        const base = 'sdk_' + raw.replace(/[^A-Za-z0-9_-]/g, '_');
+        let name = base;
+        let i = 2;
+        while (this.safeToOriginal.has(name)) name = `${base}_${i++}`;
+        return name;
+      };
+      const sdkTools = sdkActions.map(a => {
+        const safe = toSafe(a.name);
+        this.safeToOriginal.set(safe, a.name);
+        this.originalToSafe.set(a.name, safe);
+        return {
+          name: safe,
+          description: a.description,
+          inputSchema: a.schema || { type: 'object', properties: {} },
+        };
+      });
+
       return {
         tools: [
           {
@@ -133,12 +156,8 @@ export class BasecampMCPServer {
               required: ['method', 'path'],
             },
           },
-          // Dynamic SDK actions
-          ...sdkActions.map(a => ({
-            name: `sdk:${a.name}`,
-            description: a.description,
-            inputSchema: a.schema || { type: 'object', properties: {} },
-          })),
+          // Dynamic SDK actions (MCP-safe names)
+          ...sdkTools,
           {
             name: 'sdk_list_actions',
             description: 'List all available typed SDK actions and their schemas',
@@ -187,10 +206,17 @@ export class BasecampMCPServer {
             );
 
           default:
+            // Accept both original names like 'sdk:projects.list' and safe names like 'sdk_projects_list'
+            let originalName: string | undefined;
             if (name?.startsWith('sdk:')) {
-              const actionName = name.slice(4);
-              const def = sdkActions.find(a => a.name === actionName);
-              if (!def) throw new Error(`Unknown SDK action: ${actionName}`);
+              originalName = name.slice(4);
+            } else if (this.safeToOriginal.has(name)) {
+              originalName = this.safeToOriginal.get(name);
+            }
+
+            if (originalName) {
+              const def = sdkActions.find(a => a.name === originalName);
+              if (!def) throw new Error(`Unknown SDK action: ${originalName}`);
               const client = new BasecampClient();
               const res = await def.handler(client, (args as Record<string, unknown>) ?? {});
               return {
@@ -204,7 +230,8 @@ export class BasecampMCPServer {
             }
             if (name === 'sdk_list_actions') {
               const list = sdkActions.map(a => ({
-                name: a.name,
+                original: a.name,
+                safe: this.originalToSafe.get(a.name) || 'sdk_' + a.name.replace(/[^A-Za-z0-9_-]/g, '_'),
                 description: a.description,
                 schema: a.schema,
               }));
