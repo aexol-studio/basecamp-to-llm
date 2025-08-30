@@ -69,63 +69,82 @@ npm install --save-dev @aexol-studio/basecamp-to-llm
 
 ### Codex Integration
 
-1. **Copy Configuration**
-   Copy the Codex configuration to your project:
-   ```bash
-   cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.json .codex/config.json
-   ```
+Codex supports both project-level and global MCP configs.
 
-2. **Or Create Custom Config**
-   Create `.codex/config.json` in your project root:
-   ```json
-   {
-     "mcpServers": {
-       "basecamp": {
-       "command": "npx",
-       "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
-         "env": {
-           "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
-           "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
-           "BASECAMP_REDIRECT_URI": "${env:BASECAMP_REDIRECT_URI}",
-           "BASECAMP_USER_AGENT": "${env:BASECAMP_USER_AGENT}"
-         }
-       }
-     }
-   }
-   ```
+#### Project-level (recommended for repos)
 
-3. **Restart Codex**
-   Restart Codex to load the new MCP server configuration.
+1) Copy our preset into your repo:
+```bash
+cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.toml .codex/config.toml
+```
+
+Or author it manually at `.codex/config.toml`:
+```toml
+[mcpServers.basecamp]
+command = "npx"
+args = ["-y", "@aexol-studio/basecamp-to-llm", "mcp"]
+
+  [mcpServers.basecamp.env]
+  BASECAMP_CLIENT_ID = "${env:BASECAMP_CLIENT_ID}"
+  BASECAMP_CLIENT_SECRET = "${env:BASECAMP_CLIENT_SECRET}"
+  BASECAMP_REDIRECT_URI = "${env:BASECAMP_REDIRECT_URI}"
+  BASECAMP_USER_AGENT = "${env:BASECAMP_USER_AGENT}"
+```
+
+2) Restart Codex.
+
+Notes:
+- Keep secrets out of VCS. Use `${env:VAR}` and set envs in your shell/OS.
+- Project config typically overrides global config when both exist.
+
+#### Global (applies to all projects)
+
+Create `~/.codex/config.toml` with the same shape as above:
+```bash
+mkdir -p ~/.codex
+cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.toml ~/.codex/config.toml
+```
+Then restart Codex. You can still add a project `.codex/config.toml` to override or augment.
 
 ### Cursor Integration
 
-1. **Copy Configuration**
-   Copy the Cursor configuration to your project:
-   ```bash
-   cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json .cursor/config.json
-   ```
+Cursor also supports project-level and global configs.
 
-2. **Or Create Custom Config**
-   Create `.cursor/config.json` in your project root:
-   ```json
-   {
-     "mcpServers": {
-       "basecamp": {
-       "command": "npx",
-       "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
-         "env": {
-           "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
-           "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
-           "BASECAMP_REDIRECT_URI": "${env:BASECAMP_REDIRECT_URI}",
-           "BASECAMP_USER_AGENT": "${env:BASECAMP_USER_AGENT}"
-         }
-       }
-     }
-   }
-   ```
+#### Project-level
 
-3. **Restart Cursor**
-   Restart Cursor to load the new MCP server configuration.
+1) Copy our preset into your repo:
+```bash
+cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json .cursor/config.json
+```
+
+Or author it manually at `.cursor/config.json`:
+```json
+{
+  "mcpServers": {
+    "basecamp": {
+      "command": "npx",
+      "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
+      "env": {
+        "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
+        "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
+        "BASECAMP_REDIRECT_URI": "${env:BASECAMP_REDIRECT_URI}",
+        "BASECAMP_USER_AGENT": "${env:BASECAMP_USER_AGENT}"
+      }
+    }
+  }
+}
+```
+
+2) Restart Cursor.
+
+#### Global
+
+Create `~/.cursor/config.json` with the same shape as above:
+```bash
+mkdir -p ~/.cursor
+cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json ~/.cursor/config.json
+```
+Then restart Cursor. A project-level `.cursor/config.json` can override/augment the global config.
 
 ## Usage Examples
 
@@ -185,7 +204,7 @@ await server.run();
 To run the MCP server in debug mode:
 
 ```bash
-npx @aexol-studio/basecamp-to-llm mcp
+npx -y @aexol-studio/basecamp-to-llm mcp
 ```
 
 This will start the server directly and show any error messages.
@@ -196,19 +215,33 @@ Test the MCP server manually:
 
 ```bash
 # Test CLI functionality (typed)
-npx @aexol-studio/basecamp-to-llm sdk list
-npx @aexol-studio/basecamp-to-llm sdk run projects.list
+npx -y @aexol-studio/basecamp-to-llm sdk list
+npx -y @aexol-studio/basecamp-to-llm sdk run projects.list
 
 # Test MCP server
-npx @aexol-studio/basecamp-to-llm mcp
+npx -y @aexol-studio/basecamp-to-llm mcp
 ```
 
 ## Advanced Configuration
 
 ### Custom Environment Variables
 
-You can override environment variables in the config:
+You can override environment variables in the config.
 
+Codex (TOML):
+```toml
+[mcpServers.basecamp]
+command = "npx"
+args = ["-y", "@aexol-studio/basecamp-to-llm", "mcp"]
+
+  [mcpServers.basecamp.env]
+  BASECAMP_CLIENT_ID = "your_actual_client_id"
+  BASECAMP_CLIENT_SECRET = "your_actual_client_secret"
+  BASECAMP_REDIRECT_URI = "http://localhost:8787/callback"
+  BASECAMP_USER_AGENT = "My Custom App (me@example.com)"
+```
+
+Cursor (JSON):
 ```json
 {
   "mcpServers": {
@@ -228,8 +261,32 @@ You can override environment variables in the config:
 
 ### Multiple Basecamp Accounts
 
-To use multiple Basecamp accounts, create separate MCP server configurations:
+To use multiple Basecamp accounts, create separate MCP server configurations.
 
+Codex (TOML):
+```toml
+[mcpServers.basecamp-personal]
+command = "npx"
+args = ["-y", "@aexol-studio/basecamp-to-llm", "mcp"]
+
+  [mcpServers.basecamp-personal.env]
+  BASECAMP_CLIENT_ID = "personal_client_id"
+  BASECAMP_CLIENT_SECRET = "personal_client_secret"
+  BASECAMP_REDIRECT_URI = "http://localhost:8787/callback"
+  BASECAMP_USER_AGENT = "Personal App (me@example.com)"
+
+[mcpServers.basecamp-work]
+command = "npx"
+args = ["-y", "@aexol-studio/basecamp-to-llm", "mcp"]
+
+  [mcpServers.basecamp-work.env]
+  BASECAMP_CLIENT_ID = "work_client_id"
+  BASECAMP_CLIENT_SECRET = "work_client_secret"
+  BASECAMP_REDIRECT_URI = "http://localhost:8787/callback"
+  BASECAMP_USER_AGENT = "Work App (me@company.com)"
+```
+
+Cursor (JSON):
 ```json
 {
   "mcpServers": {
@@ -245,7 +302,7 @@ To use multiple Basecamp accounts, create separate MCP server configurations:
     },
     "basecamp-work": {
       "command": "npx",
-      "args": ["@aexol-studio/basecamp-to-llm", "mcp"],
+      "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
       "env": {
         "BASECAMP_CLIENT_ID": "work_client_id",
         "BASECAMP_CLIENT_SECRET": "work_client_secret",

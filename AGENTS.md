@@ -4,7 +4,7 @@
 - `src/`: TypeScript sources (`cli.ts`, `index.ts`, `basecamp-fetcher.ts`, `basecamp-types.ts`, `mcp-server.ts`). Tests live in `src/__tests__/`.
 - `dist/`: Compiled JS/typings; CLI binaries map to `dist/cli.js` and `dist/mcp-server.js`.
 - `examples/`: Runnable usage samples (`basic-usage.ts|js`, `mcp-usage.ts`).
-- `configs/`: IDE MCP configs (`codex.json`, `cursor.json`).
+- `configs/`: IDE MCP configs (`codex.toml` for Codex, `cursor.json` for Cursor).
 - `scripts/`: Utilities like `setup-mcp.js`.
 
 ## Build, Test, and Development Commands
@@ -34,4 +34,3 @@
 ## Security & Configuration Tips
 - Required env vars for Basecamp: `BASECAMP_CLIENT_ID`, `BASECAMP_CLIENT_SECRET`, `BASECAMP_REDIRECT_URI`, `BASECAMP_USER_AGENT` (do not commit secrets).
 - MCP setup: `npx @aexol-studio/basecamp-to-llm setup-mcp` or copy `configs/*` into `.codex/` or `.cursor/`.
-

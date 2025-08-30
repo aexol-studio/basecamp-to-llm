@@ -110,8 +110,8 @@ This package includes an MCP server that allows you to use Basecamp functionalit
    
    Or manually copy configuration:
    ```bash
-   # For Codex
-   cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.json .codex/config.json
+   # For Codex (TOML)
+   cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.toml .codex/config.toml
    
    # For Cursor
    cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json .cursor/config.json

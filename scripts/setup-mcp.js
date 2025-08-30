@@ -36,13 +36,13 @@ function main() {
     process.exit(1);
   }
 
-  // Setup Codex config
-  const codexSource = path.join(configsDir, 'codex.json');
-  const codexTarget = path.join(process.cwd(), '.codex', 'config.json');
-  
-  console.log('📝 Setting up Codex configuration...');
-  createDirectory(path.dirname(codexTarget));
-  copyConfig(codexSource, codexTarget);
+  // Setup Codex config (use TOML)
+  const codexTomlSource = path.join(configsDir, 'codex.toml');
+  const codexTomlTarget = path.join(process.cwd(), '.codex', 'config.toml');
+
+  console.log('📝 Setting up Codex configuration (TOML)...');
+  createDirectory(path.dirname(codexTomlTarget));
+  copyConfig(codexTomlSource, codexTomlTarget);
 
   // Setup Cursor config
   const cursorSource = path.join(configsDir, 'cursor.json');
