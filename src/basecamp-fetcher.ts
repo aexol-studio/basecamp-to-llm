@@ -164,7 +164,9 @@ export class BasecampFetcher {
       // best-effort; ignore failures in headless envs
       const { exec } = await import('node:child_process');
       exec(`${cmd} "${url}"`);
-    } catch {}
+    } catch {
+      //noop
+    }
   }
 
   private async startLocalCallbackServer(): Promise<{ code: string }> {
