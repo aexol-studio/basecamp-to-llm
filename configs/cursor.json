@@ -3,6 +3,7 @@
         "basecamp": {
             "command": "npx",
             "args": [
+                "-y",
                 "@aexol-studio/basecamp-to-llm",
                 "mcp"
             ],

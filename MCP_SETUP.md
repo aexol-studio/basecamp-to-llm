@@ -81,8 +81,8 @@ npm install --save-dev @aexol-studio/basecamp-to-llm
    {
      "mcpServers": {
        "basecamp": {
-         "command": "npx",
-         "args": ["@aexol-studio/basecamp-to-llm", "mcp"],
+       "command": "npx",
+       "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
          "env": {
            "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
            "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
@@ -111,8 +111,8 @@ npm install --save-dev @aexol-studio/basecamp-to-llm
    {
      "mcpServers": {
        "basecamp": {
-         "command": "npx",
-         "args": ["@aexol-studio/basecamp-to-llm", "mcp"],
+       "command": "npx",
+       "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
          "env": {
            "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
            "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
@@ -214,7 +214,7 @@ You can override environment variables in the config:
   "mcpServers": {
     "basecamp": {
       "command": "npx",
-      "args": ["@aexol-studio/basecamp-to-llm", "mcp"],
+      "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
       "env": {
         "BASECAMP_CLIENT_ID": "your_actual_client_id",
         "BASECAMP_CLIENT_SECRET": "your_actual_client_secret",
@@ -235,7 +235,7 @@ To use multiple Basecamp accounts, create separate MCP server configurations:
   "mcpServers": {
     "basecamp-personal": {
       "command": "npx",
-      "args": ["@aexol-studio/basecamp-to-llm", "mcp"],
+      "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
       "env": {
         "BASECAMP_CLIENT_ID": "personal_client_id",
         "BASECAMP_CLIENT_SECRET": "personal_client_secret",

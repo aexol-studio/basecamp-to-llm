@@ -31,6 +31,16 @@ export class BasecampClient {
     }
   }
 
+  private log(...args: unknown[]): void {
+    if (process.env['BASECAMP_MCP_STDERR'] === '1') {
+      // eslint-disable-next-line no-console
+      console.error(...args);
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(...args);
+    }
+  }
+
   private get userAgent(): string {
     const ua = this.USER_AGENT;
     if (!ua) throw new Error('Missing env BASECAMP_USER_AGENT');
@@ -240,10 +250,8 @@ export class BasecampClient {
       return code;
     } catch (e) {
       // Fallback to manual paste
-      // eslint-disable-next-line no-console
-      console.log('Visit and authorize:', url);
-      // eslint-disable-next-line no-console
-      console.log('Then paste back the "code" value.');
+      this.log('Visit and authorize:', url);
+      this.log('Then paste back the "code" value.');
       const code = await new Promise<string>(resolve => {
         process.stdout.write('Code: ');
         process.stdin.setEncoding('utf8');

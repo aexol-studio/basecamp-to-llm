@@ -1,6 +1,6 @@
 {
     "name": "@aexol-studio/basecamp-to-llm",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "CLI tool to fetch Basecamp todos and convert them to LLM-friendly task formats",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -31,6 +31,7 @@
         "example:js": "node examples/basic-usage.js",
         "example:mcp": "tsx examples/mcp-usage.ts",
         "example:mcp-client": "node examples/mcp-client.mjs",
+        "example:live-lists": "tsx examples/live-list-check.ts",
         "setup-mcp": "node scripts/setup-mcp.js"
     },
     "keywords": [

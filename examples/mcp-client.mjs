@@ -15,6 +15,7 @@ async function main() {
   const env = {
     ...process.env,
     BASECAMP_USER_AGENT: process.env.BASECAMP_USER_AGENT || 'Basecamp MCP Test (test@example.com)',
+    BASECAMP_MCP_STDERR: '1',
   };
   const transport = new StdioClientTransport({
     command: 'node',

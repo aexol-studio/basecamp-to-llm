@@ -68,6 +68,16 @@ export class BasecampFetcher {
     this.validateEnvironment();
   }
 
+  private log(...args: unknown[]): void {
+    if (process.env['BASECAMP_MCP_STDERR'] === '1') {
+      // eslint-disable-next-line no-console
+      console.error(...args);
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(...args);
+    }
+  }
+
   private validateEnvironment(): void {
     if (!this.USER_AGENT) {
       throw new Error('Missing env BASECAMP_USER_AGENT');
@@ -98,14 +108,7 @@ export class BasecampFetcher {
       `${this.API_BASE}/${accountId}/projects.json`,
       accessToken
     );
-    const direct = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
-    if (direct) return direct;
-    // Try archived as a fallback
-    const archived = await this.api<Project[]>(
-      `${this.API_BASE}/${accountId}/projects/archived.json`,
-      accessToken
-    );
-    return archived.find(p => p.name.toLowerCase() === name.toLowerCase());
+    return projects.find(p => p.name.toLowerCase() === name.toLowerCase());
   }
 
   private async listCards(
@@ -216,14 +219,14 @@ export class BasecampFetcher {
     const url = `${this.LAUNCHPAD}/authorization/new?type=web_server&client_id=${encodeURIComponent(
       this.CLIENT_ID
     )}&redirect_uri=${encodeURIComponent(this.REDIRECT_URI)}`;
-    console.log('\nAuthorize this app by visiting:');
-    console.log(url);
+    this.log('\nAuthorize this app by visiting:');
+    this.log(url);
     if (openBrowserFlag) await this.openUrl(url);
     try {
       const { code } = await this.startLocalCallbackServer();
       return code;
     } catch (e) {
-      console.log('Local callback failed. Paste the "code" param from redirected URL here:');
+      this.log('Local callback failed. Paste the "code" param from redirected URL here:');
       const code = await new Promise<string>(resolve => {
         process.stdout.write('Code: ');
         process.stdin.setEncoding('utf8');
@@ -320,22 +323,17 @@ export class BasecampFetcher {
       `${this.API_BASE}/${accountId}/projects.json`,
       token.access_token
     );
-    const archivedProjects = await this.api<Project[]>(
-      `${this.API_BASE}/${accountId}/projects/archived.json`,
-      token.access_token
-    );
-
-    return [...activeProjects, ...archivedProjects];
+    return activeProjects;
   }
 
   public async fetchTodos(projectName: string, options: FetchOptions = {}): Promise<void> {
     const token = await this.getAccessToken(options.openBrowser || false);
     const accountId = await this.resolveAccountId(token.access_token);
 
-    console.log(`Looking up project: ${projectName}`);
+    this.log(`Looking up project: ${projectName}`);
     const project = await this.findProjectByName(projectName, accountId, token.access_token);
     if (!project) throw new Error(`Project not found: ${projectName}`);
-    console.log(`Found project #${project.id} (${project.name})`);
+    this.log(`Found project #${project.id} (${project.name})`);
 
     const plan: { step: string; status: 'pending' }[] = [];
 
@@ -366,7 +364,7 @@ export class BasecampFetcher {
       }
     }
 
-    console.log(`Collected ${plan.length} open item(s)`);
+    this.log(`Collected ${plan.length} open item(s)`);
 
     const codexDir = path.join(process.cwd(), '.codex');
     await fs.mkdir(codexDir, { recursive: true });
@@ -386,9 +384,9 @@ export class BasecampFetcher {
     ].join('\n');
     await fs.writeFile(mdPath, md, 'utf8');
 
-    console.log(`Wrote ${plan.length} task(s) to:`);
-    console.log(`- ${outJsonPath}`);
-    console.log(`- ${mdPath}`);
-    console.log('You can load these into Codex CLI as a plan.');
+    this.log(`Wrote ${plan.length} task(s) to:`);
+    this.log(`- ${outJsonPath}`);
+    this.log(`- ${mdPath}`);
+    this.log('You can load these into Codex CLI as a plan.');
   }
 }

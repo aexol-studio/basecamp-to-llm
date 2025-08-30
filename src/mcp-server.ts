@@ -6,10 +6,12 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { BasecampFetcher } from './basecamp-fetcher.js';
 import { BasecampClient, type HttpMethod, type RequestOptions } from './sdk/client.js';
 import { actions as sdkActions } from './sdk/registry.js';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 export class BasecampMCPServer {
   private server: Server;
-  private fetcher: BasecampFetcher;
+  private fetcher?: BasecampFetcher;
 
   constructor() {
     this.server = new Server({
@@ -17,8 +19,16 @@ export class BasecampMCPServer {
       version: '1.0.0',
     });
 
-    this.fetcher = new BasecampFetcher();
+    // Ensure any internal logs from helpers go to stderr to avoid
+    // corrupting the MCP stdio protocol on stdout.
+    process.env['BASECAMP_MCP_STDERR'] = '1';
+
     this.setupTools();
+  }
+
+  private getFetcher(): BasecampFetcher {
+    if (!this.fetcher) this.fetcher = new BasecampFetcher();
+    return this.fetcher;
   }
 
   private setupTools(): void {
@@ -248,7 +258,7 @@ export class BasecampMCPServer {
   }
 
   private async handleListProjects() {
-    const projects = await this.fetcher.listProjects();
+    const projects = await this.getFetcher().listProjects();
 
     const projectList = projects
       .map(
@@ -275,7 +285,7 @@ export class BasecampMCPServer {
   }) {
     const { projectName, tableName, columnName, outputPath } = args;
 
-    await this.fetcher.fetchTodos(projectName, {
+    await this.getFetcher().fetchTodos(projectName, {
       tableName,
       columnName,
       outputPath,
@@ -297,7 +307,7 @@ export class BasecampMCPServer {
   private async handleAuthenticate(args: { openBrowser?: boolean }) {
     const { openBrowser = true } = args;
 
-    await this.fetcher.authenticate(openBrowser);
+    await this.getFetcher().authenticate(openBrowser);
 
     return {
       content: [
@@ -311,7 +321,7 @@ export class BasecampMCPServer {
 
   private async handleGetProjectInfo(args: { projectName: string }) {
     const { projectName } = args;
-    const projects = await this.fetcher.listProjects();
+    const projects = await this.getFetcher().listProjects();
 
     const project = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
 
@@ -350,7 +360,8 @@ export class BasecampMCPServer {
 // Run the server if this file is executed directly (ESM-compatible)
 try {
   const invokedPath = process.argv?.[1];
-  const isDirect = invokedPath ? new URL(`file://${invokedPath}`).href === import.meta.url : false;
+  const thisPath = fileURLToPath(import.meta.url);
+  const isDirect = invokedPath ? path.resolve(invokedPath) === thisPath : false;
   if (isDirect) {
     const server = new BasecampMCPServer();
     server.run().catch(error => {
