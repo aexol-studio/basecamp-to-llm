@@ -93,14 +93,17 @@ program
       const { execSync } = await import('node:child_process');
       const { fileURLToPath } = await import('node:url');
       const { dirname, join } = await import('node:path');
-      
+
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = dirname(__filename);
       const setupScript = join(__dirname, '..', 'scripts', 'setup-mcp.js');
-      
+
       execSync(`node "${setupScript}"`, { stdio: 'inherit' });
     } catch (error) {
-      console.error(chalk.red('Setup Error:'), error instanceof Error ? error.message : String(error));
+      console.error(
+        chalk.red('Setup Error:'),
+        error instanceof Error ? error.message : String(error)
+      );
       process.exit(1);
     }
   });
