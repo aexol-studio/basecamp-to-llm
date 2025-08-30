@@ -3,6 +3,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { BasecampFetcher } from './basecamp-fetcher.js';
+import { BasecampClient } from './sdk/client.js';
+import { actions as sdkActions } from './sdk/registry.js';
 
 const program = new Command();
 
@@ -79,6 +81,75 @@ program
     } catch (error) {
       console.error(
         chalk.red('MCP Server Error:'),
+        error instanceof Error ? error.message : String(error)
+      );
+      process.exit(1);
+    }
+  });
+
+program
+  .command('api')
+  .description('Call any Basecamp API endpoint (advanced)')
+  .argument('<method>', 'HTTP method: GET, POST, PUT, PATCH, DELETE, HEAD')
+  .argument('<path>', 'API path relative to account (e.g., /projects.json) or absolute URL')
+  .option('-q, --query <json>', 'Query params JSON, e.g. {"page":1}')
+  .option('-d, --data <json>', 'Request body JSON for write methods')
+  .option('--absolute', 'Treat path as absolute URL')
+  .action(async (method: string, apiPath: string, options) => {
+    try {
+      const client = new BasecampClient();
+      const query = options.query ? JSON.parse(options.query) : undefined;
+      const body = options.data ? JSON.parse(options.data) : undefined;
+      const m = String(method || '').toUpperCase();
+      const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'] as const;
+      if (!allowed.includes(m as any)) {
+        throw new Error(`Invalid method: ${method}`);
+      }
+      const res = await client.request(m as any, apiPath, {
+        query,
+        body,
+        absolute: !!options.absolute,
+      } as any);
+      const out = typeof res === 'string' ? res : JSON.stringify(res, null, 2);
+      console.log(out);
+    } catch (error) {
+      console.error(
+        chalk.red('API Error:'),
+        error instanceof Error ? error.message : String(error)
+      );
+      process.exit(1);
+    }
+  });
+
+// Dynamic SDK commands
+const sdkCmd = program.command('sdk').description('Typed SDK actions (list and run)');
+
+sdkCmd
+  .command('list')
+  .description('List available SDK actions')
+  .action(() => {
+    console.log('Available actions:');
+    for (const a of sdkActions) {
+      console.log(`- ${a.name}: ${a.description}`);
+    }
+  });
+
+sdkCmd
+  .command('run')
+  .description('Run an SDK action by name with JSON args')
+  .argument('<action>', 'Action name, e.g., projects.list')
+  .option('-a, --args <json>', 'Arguments JSON object')
+  .action(async (actionName: string, options) => {
+    try {
+      const def = sdkActions.find(a => a.name === actionName);
+      if (!def) throw new Error(`Unknown action: ${actionName}`);
+      const args = options.args ? JSON.parse(options.args) : {};
+      const client = new BasecampClient();
+      const res = await def.handler(client, args);
+      console.log(typeof res === 'string' ? res : JSON.stringify(res, null, 2));
+    } catch (error) {
+      console.error(
+        chalk.red('SDK Error:'),
         error instanceof Error ? error.message : String(error)
       );
       process.exit(1);

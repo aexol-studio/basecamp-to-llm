@@ -4,6 +4,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { BasecampFetcher } from './basecamp-fetcher.js';
+import { BasecampClient } from './sdk/client.js';
+import { actions as sdkActions } from './sdk/registry.js';
 
 export class BasecampMCPServer {
   private server: Server;
@@ -88,6 +90,50 @@ export class BasecampMCPServer {
               required: ['projectName'],
             },
           },
+          {
+            name: 'api_request',
+            description:
+              'Generic Basecamp API request (exposes full API surface). Path is relative to account unless absolute=true.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                method: {
+                  type: 'string',
+                  description: 'HTTP method: GET, POST, PUT, PATCH, DELETE, HEAD',
+                },
+                path: {
+                  type: 'string',
+                  description:
+                    'API path like /projects.json or absolute URL like https://3.basecampapi.com/{account}/projects.json',
+                },
+                query: {
+                  type: 'object',
+                  description: 'Optional query parameters as key/value map',
+                },
+                body: {
+                  type: 'object',
+                  description: 'Optional JSON body for write methods',
+                },
+                absolute: {
+                  type: 'boolean',
+                  description: 'Treat path as absolute URL',
+                  default: false,
+                },
+              },
+              required: ['method', 'path'],
+            },
+          },
+          // Dynamic SDK actions
+          ...sdkActions.map(a => ({
+            name: `sdk:${a.name}`,
+            description: a.description,
+            inputSchema: a.schema || { type: 'object', properties: {} },
+          })),
+          {
+            name: 'sdk_list_actions',
+            description: 'List all available typed SDK actions and their schemas',
+            inputSchema: { type: 'object', properties: {} },
+          },
         ],
       };
     });
@@ -110,7 +156,40 @@ export class BasecampMCPServer {
           case 'get_project_info':
             return await this.handleGetProjectInfo(args as any);
 
+          case 'api_request':
+            return await this.handleApiRequest(args as any);
+
           default:
+            if (name?.startsWith('sdk:')) {
+              const actionName = name.slice(4);
+              const def = sdkActions.find(a => a.name === actionName);
+              if (!def) throw new Error(`Unknown SDK action: ${actionName}`);
+              const client = new BasecampClient();
+              const res = await def.handler(client, (args as any) || {});
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: typeof res === 'string' ? res : JSON.stringify(res, null, 2),
+                  },
+                ],
+              };
+            }
+            if (name === 'sdk_list_actions') {
+              const list = sdkActions.map(a => ({
+                name: a.name,
+                description: a.description,
+                schema: a.schema,
+              }));
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(list, null, 2),
+                  },
+                ],
+              };
+            }
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -124,6 +203,30 @@ export class BasecampMCPServer {
         };
       }
     });
+  }
+
+  private async handleApiRequest(args: {
+    method: string;
+    path: string;
+    query?: Record<string, unknown>;
+    body?: unknown;
+    absolute?: boolean;
+  }) {
+    const client = new BasecampClient();
+    const res = await client.request(args.method.toUpperCase() as any, args.path, {
+      query: args.query as any,
+      body: args.body,
+      absolute: !!args.absolute,
+    });
+    const text = typeof res === 'string' ? res : JSON.stringify(res, null, 2);
+    return {
+      content: [
+        {
+          type: 'text',
+          text,
+        },
+      ],
+    };
   }
 
   private async handleListProjects() {
@@ -226,11 +329,18 @@ export class BasecampMCPServer {
   }
 }
 
-// Run the server if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new BasecampMCPServer();
-  server.run().catch(error => {
-    console.error('MCP server error:', error);
-    process.exit(1);
-  });
-}
+// Run the server if this file is executed directly (ESM-compatible)
+try {
+  const invokedPath = process.argv?.[1];
+  const isDirect = invokedPath
+    ? new URL(`file://${invokedPath}`).href === import.meta.url
+    : false;
+  if (isDirect) {
+    const server = new BasecampMCPServer();
+    server.run().catch(error => {
+      console.error('MCP server error:', error);
+      process.exit(1);
+    });
+  }
+  // eslint-disable-next-line no-empty
+} catch {}

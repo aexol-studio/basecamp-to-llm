@@ -8,70 +8,34 @@ The Model Context Protocol (MCP) allows AI assistants like Codex and Cursor to i
 
 ## Available MCP Tools
 
-The Basecamp MCP server provides the following tools:
+The Basecamp MCP server provides a full-featured set of tools:
 
-### 1. `list_projects`
-Lists all available Basecamp projects in your account.
+- `authenticate`: Start OAuth flow (optional `openBrowser`).
+- `list_projects`: List all projects.
+- `get_project_info`: Show project details by name.
+- `fetch_todos`: Export todos from a project to `.codex/tasks.json` and `.codex/tasks.md`.
+- `api_request`: Generic API request for any Basecamp endpoint.
+- `sdk_list_actions`: List all typed SDK actions available as `sdk:*` tools.
+- `sdk:*` tools: Typed, discoverable actions that map to the Basecamp API.
 
-**Parameters:** None
+### Typed SDK Tools (sdk:*)
+These tools are generated from our SDK registry and cover common Basecamp resources. Examples:
 
-**Example:**
+- Projects: `sdk:projects.list`, `sdk:projects.get`, `sdk:projects.create`, `sdk:projects.update`, `sdk:projects.trash`
+- Todos: `sdk:todos.list`, `sdk:todos.get`, `sdk:todos.create`, `sdk:todos.update`, `sdk:todos.complete`, `sdk:todos.uncomplete`
+- Card Tables: `sdk:card_tables.get`, `sdk:card_tables.get_column`, `sdk:card_tables.get_card`, `sdk:card_tables.create_card`
+- Messages: `sdk:messages.list`, `sdk:messages.get`, `sdk:messages.create`
+- Comments: `sdk:comments.list_for_recording`, `sdk:comments.get`, `sdk:comments.create`, `sdk:comments.update`
+- People: `sdk:people.list`, `sdk:people.get`
+
+Use `sdk_list_actions` to get exact input schemas. Example invocation payload:
 ```json
 {
-  "name": "list_projects",
-  "arguments": {}
-}
-```
-
-### 2. `fetch_todos`
-Fetches todos from a Basecamp project and converts them to task formats.
-
-**Parameters:**
-- `projectName` (required): Name of the Basecamp project
-- `tableName` (optional): Specific kanban board name
-- `columnName` (optional): Specific column name to filter by
-- `outputPath` (optional): Custom output path for tasks file
-
-**Example:**
-```json
-{
-  "name": "fetch_todos",
+  "name": "sdk:todos.create",
   "arguments": {
-    "projectName": "My Project",
-    "tableName": "Sprint Board",
-    "columnName": "In Progress"
-  }
-}
-```
-
-### 3. `authenticate`
-Authenticates with Basecamp using OAuth2.
-
-**Parameters:**
-- `openBrowser` (optional): Whether to open browser for OAuth (default: true)
-
-**Example:**
-```json
-{
-  "name": "authenticate",
-  "arguments": {
-    "openBrowser": true
-  }
-}
-```
-
-### 4. `get_project_info`
-Gets detailed information about a specific project.
-
-**Parameters:**
-- `projectName` (required): Name of the Basecamp project
-
-**Example:**
-```json
-{
-  "name": "get_project_info",
-  "arguments": {
-    "projectName": "My Project"
+    "projectId": 2085958499,
+    "listId": 1069479520,
+    "content": "Ship SDK"
   }
 }
 ```
@@ -231,8 +195,9 @@ This will start the server directly and show any error messages.
 Test the MCP server manually:
 
 ```bash
-# Test CLI functionality
-npx @aexol-studio/basecamp-to-llm projects
+# Test CLI functionality (typed)
+npx @aexol-studio/basecamp-to-llm sdk list
+npx @aexol-studio/basecamp-to-llm sdk run projects.list
 
 # Test MCP server
 npx @aexol-studio/basecamp-to-llm mcp
@@ -302,4 +267,13 @@ If you encounter issues:
 4. Test the CLI functionality first before using MCP
 5. Check the debug output from the MCP server
 
+**Typed SDK example:**
+```
+Create a to-do "Cut RC 1.0" in list 1069479520 of project 2085958499 using the Basecamp MCP tool sdk:todos.create.
+```
+
+**Generic API example:**
+```
+Call api_request with method=GET and path=/projects.json and show me the result.
+```
 For more help, please [open an issue](https://github.com/aexol-studio/basecamp-to-llm/issues) on GitHub.

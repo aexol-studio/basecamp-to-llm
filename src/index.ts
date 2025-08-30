@@ -1,5 +1,7 @@
 export { BasecampFetcher } from './basecamp-fetcher.js';
 export { BasecampMCPServer } from './mcp-server.js';
+export { BasecampClient } from './sdk/client.js';
+export * as SDK from './sdk/index.js';
 export type {
   FetchOptions,
   Project,
