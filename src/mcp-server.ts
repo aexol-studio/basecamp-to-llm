@@ -205,7 +205,7 @@ export class BasecampMCPServer {
               }) || { method: 'GET', path: '' }
             );
 
-          default:
+          default: {
             // Accept both original names like 'sdk:projects.list' and safe names like 'sdk_projects_list'
             let originalName: string | undefined;
             if (name?.startsWith('sdk:')) {
@@ -231,7 +231,9 @@ export class BasecampMCPServer {
             if (name === 'sdk_list_actions') {
               const list = sdkActions.map(a => ({
                 original: a.name,
-                safe: this.originalToSafe.get(a.name) || 'sdk_' + a.name.replace(/[^A-Za-z0-9_-]/g, '_'),
+                safe:
+                  this.originalToSafe.get(a.name) ||
+                  'sdk_' + a.name.replace(/[^A-Za-z0-9_-]/g, '_'),
                 description: a.description,
                 schema: a.schema,
               }));
@@ -245,6 +247,7 @@ export class BasecampMCPServer {
               };
             }
             throw new Error(`Unknown tool: ${name}`);
+          }
         }
       } catch (error) {
         return {
