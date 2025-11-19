@@ -6,3 +6,4 @@ export { CardTablesResource } from './resources/cardTables.js';
 export { PeopleResource } from './resources/people.js';
 export { MessagesResource } from './resources/messages.js';
 export { CommentsResource } from './resources/comments.js';
+export { StepsResource } from './resources/steps.js';

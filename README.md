@@ -45,12 +45,14 @@ export BASECAMP_USER_AGENT="Your App Name (your@email.com)"
 ```
 
 **Required:**
+
 - `BASECAMP_CLIENT_ID`: Your OAuth2 client ID from Basecamp
 - `BASECAMP_CLIENT_SECRET`: Your OAuth2 client secret from Basecamp
 - `BASECAMP_REDIRECT_URI`: Must match your app config (e.g., `http://localhost:8787/callback`)
 - `BASECAMP_USER_AGENT`: Required by Basecamp API (e.g., `"My App (you@example.com)"`)
 
 **Optional:**
+
 - `BASECAMP_ACCOUNT_ID`: Force a specific account ID (otherwise auto-detected)
 
 ## Usage
@@ -99,20 +101,23 @@ This package includes an MCP server that allows you to use Basecamp functionalit
 #### Quick Setup
 
 1. **Install as dev dependency:**
+
    ```bash
    npm install --save-dev @aexol-studio/basecamp-to-llm
    ```
 
 2. **Run setup script:**
+
    ```bash
    npx @aexol-studio/basecamp-to-llm setup-mcp
    ```
-   
+
    Or manually copy configuration:
+
    ```bash
    # For Codex (TOML)
    cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.toml .codex/config.toml
-   
+
    # For Cursor
    cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json .cursor/config.json
    ```
@@ -127,6 +132,13 @@ This package includes an MCP server that allows you to use Basecamp functionalit
 - `fetch_todos` - Fetch todos from a project
 - `authenticate` - Authenticate with Basecamp
 - `get_project_info` - Get project details
+- **🎯 Task Management (Recommended):**
+  - `sdk_card_tables_create_task` - Create a complete task (card with description and steps) in one operation
+- **Steps (Card Table Subtasks):**
+  - `sdk_steps_create` - Create a step within a card
+  - `sdk_steps_update` - Update an existing step
+  - `sdk_steps_complete` - Mark a step as completed/uncompleted
+  - `sdk_steps_reposition` - Change step position within card
 
 #### Usage in IDE
 
@@ -134,8 +146,8 @@ Once configured, you can use natural language in your IDE:
 
 ```
 "Can you list my Basecamp projects?"
-"Fetch todos from my Sprint Project"
-"I need to authenticate with Basecamp"
+"Create a task for implementing user authentication with 3 steps"
+"Add a new task to the Sprint board with description and subtasks"
 ```
 
 For detailed MCP setup instructions, see [MCP_SETUP.md](MCP_SETUP.md).
@@ -148,6 +160,7 @@ The tool creates two files in the `.codex/` directory (or your specified output 
 2. **`tasks.md`** - Human-readable Markdown format
 
 Example `tasks.json`:
+
 ```json
 {
   "plan": [
@@ -164,6 +177,7 @@ Example `tasks.json`:
 ```
 
 Example `tasks.md`:
+
 ```markdown
 # Codex Tasks from Basecamp: My Project
 
@@ -177,6 +191,7 @@ You can also use the library programmatically:
 
 ```typescript
 import { BasecampFetcher } from '@aexol-studio/basecamp-to-llm';
+import { BasecampClient, StepsResource, CardTablesResource } from '@aexol-studio/basecamp-to-llm';
 
 const fetcher = new BasecampFetcher();
 
@@ -190,6 +205,59 @@ await fetcher.fetchTodos('My Project Name', {
   columnName: 'In Progress',
   outputPath: './custom-output.json',
   openBrowser: false,
+});
+
+// 🎯 RECOMMENDED: Create a complete task with description and steps
+const client = new BasecampClient();
+const cardTables = new CardTablesResource(client);
+
+const task = await cardTables.createCardWithSteps(projectId, columnId, {
+  title: 'Implement user authentication',
+  content: `Complete user authentication system with OAuth2 support.
+  
+Requirements:
+- Support email/password login
+- Add OAuth2 providers (Google, GitHub)
+- Implement JWT tokens
+- Add password reset flow`,
+  due_on: '2025-12-31',
+  steps: [
+    { title: 'Design authentication flow', due_on: '2025-12-10' },
+    { title: 'Implement OAuth2 integration', due_on: '2025-12-15' },
+    { title: 'Add JWT token handling', due_on: '2025-12-20' },
+    { title: 'Create password reset flow', due_on: '2025-12-25' },
+    { title: 'Write tests and documentation', due_on: '2025-12-30' },
+  ],
+});
+
+console.log(`Created task: ${task.card.title} with ${task.steps.length} steps`);
+
+// Work with Steps individually (if needed)
+const steps = new StepsResource(client);
+
+// Create a new step in a card
+const newStep = await steps.create(projectId, cardId, {
+  title: 'Review code',
+  due_on: '2025-12-31',
+  assignees: '123,456', // comma-separated person IDs
+});
+
+// Update a step
+await steps.update(projectId, stepId, {
+  title: 'Review and approve code',
+  due_on: '2026-01-15',
+});
+
+// Mark step as completed
+await steps.complete(projectId, stepId, 'on');
+
+// Mark step as uncompleted
+await steps.complete(projectId, stepId, 'off');
+
+// Reposition a step
+await steps.reposition(projectId, cardId, {
+  source_id: stepId,
+  position: 2, // zero-indexed position
 });
 ```
 
@@ -266,7 +334,20 @@ If you encounter any issues or have questions, please [open an issue](https://gi
 
 ## Changelog
 
+### 1.2.0
+
+- **🎯 NEW: `create_task` tool** - Create complete tasks (card with description and steps) in one operation
+- `createCardWithSteps()` helper method for easy task creation with subtasks
+- Description now recommended for all cards
+- Improved AI integration for task management
+- Better support for creating structured tasks with multiple steps
+- Added support for Card Table Steps (subtasks)
+- New StepsResource for creating, updating, completing, and repositioning steps
+- MCP tools for steps management
+- Comprehensive TypeScript types for steps
+
 ### 1.0.0
+
 - Initial release
 - OAuth2 authentication
 - Fetch todos from Basecamp projects

@@ -13,6 +13,8 @@ export interface CreateTodoBody {
   due_on?: string | null;
   starts_on?: string | null;
   assignee_ids?: number[];
+  completion_subscriber_ids?: number[];
+  notify?: boolean;
 }
 
 export interface UpdateTodoBody {
@@ -21,6 +23,8 @@ export interface UpdateTodoBody {
   due_on?: string | null;
   starts_on?: string | null;
   assignee_ids?: number[];
+  completion_subscriber_ids?: number[];
+  notify?: boolean;
 }
 
 export class TodosResource {
@@ -50,5 +54,32 @@ export class TodosResource {
 
   uncomplete(projectId: number, todoId: number) {
     return this.client.delete<void>(`/buckets/${projectId}/todos/${todoId}/completion.json`);
+  }
+
+  reposition(projectId: number, todoId: number, position: number) {
+    return this.client.put<void>(`/buckets/${projectId}/todos/${todoId}/position.json`, {
+      position,
+    });
+  }
+
+  trash(projectId: number, todoId: number) {
+    return this.client.put<void>(
+      `/buckets/${projectId}/recordings/${todoId}/status/trashed.json`,
+      {}
+    );
+  }
+
+  archive(projectId: number, todoId: number) {
+    return this.client.put<void>(
+      `/buckets/${projectId}/recordings/${todoId}/status/archived.json`,
+      {}
+    );
+  }
+
+  unarchive(projectId: number, todoId: number) {
+    return this.client.put<void>(
+      `/buckets/${projectId}/recordings/${todoId}/status/active.json`,
+      {}
+    );
   }
 }

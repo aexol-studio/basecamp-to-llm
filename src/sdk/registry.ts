@@ -5,6 +5,7 @@ import { CardTablesResource } from './resources/cardTables.js';
 import { PeopleResource } from './resources/people.js';
 import { MessagesResource } from './resources/messages.js';
 import { CommentsResource } from './resources/comments.js';
+import { StepsResource } from './resources/steps.js';
 
 export type ActionHandler = (
   client: BasecampClient,
@@ -289,6 +290,67 @@ export const actions: ActionDef[] = [
         (args as { projectId: number; todoId: number }).todoId
       ),
   },
+  {
+    name: 'todos.reposition',
+    description: 'Change the position of a to-do within its list',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        todoId: { type: 'number' },
+        position: { type: 'number' },
+      },
+      required: ['projectId', 'todoId', 'position'],
+    },
+    handler: async (client, args) =>
+      new TodosResource(client).reposition(
+        (args as { projectId: number; todoId: number; position: number }).projectId,
+        (args as { projectId: number; todoId: number; position: number }).todoId,
+        (args as { projectId: number; todoId: number; position: number }).position
+      ),
+  },
+  {
+    name: 'todos.trash',
+    description: 'Trash a to-do (moves to trash)',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
+      required: ['projectId', 'todoId'],
+    },
+    handler: async (client, args) =>
+      new TodosResource(client).trash(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
+  },
+  {
+    name: 'todos.archive',
+    description: 'Archive a to-do',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
+      required: ['projectId', 'todoId'],
+    },
+    handler: async (client, args) =>
+      new TodosResource(client).archive(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
+  },
+  {
+    name: 'todos.unarchive',
+    description: 'Unarchive a to-do (set status to active)',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, todoId: { type: 'number' } },
+      required: ['projectId', 'todoId'],
+    },
+    handler: async (client, args) =>
+      new TodosResource(client).unarchive(
+        (args as { projectId: number; todoId: number }).projectId,
+        (args as { projectId: number; todoId: number }).todoId
+      ),
+  },
   cardTablesGet(),
   {
     name: 'card_tables.get_column',
@@ -327,7 +389,9 @@ export const actions: ActionDef[] = [
         projectId: { type: 'number' },
         columnId: { type: 'number' },
         title: { type: 'string' },
-        description: { type: 'string' },
+        content: { type: 'string' },
+        due_on: { type: 'string' },
+        notify: { type: 'boolean' },
       },
       required: ['projectId', 'columnId', 'title'],
     },
@@ -335,7 +399,138 @@ export const actions: ActionDef[] = [
       new CardTablesResource(client).createCard(
         (args as { projectId: number; columnId: number }).projectId,
         (args as { projectId: number; columnId: number }).columnId,
-        args as { title: string; description?: string }
+        args as { title: string; content?: string; due_on?: string; notify?: boolean }
+      ),
+  },
+  {
+    name: 'card_tables.create_task',
+    description:
+      'Create a complete task (card with description and steps) in one operation. This is the recommended way to create tasks with AI.',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        columnId: { type: 'number' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        due_on: { type: 'string' },
+        assignee_ids: { type: 'array', items: { type: 'number' } },
+        notify: { type: 'boolean' },
+        steps: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              due_on: { type: 'string' },
+              assignees: { type: 'string' },
+            },
+            required: ['title'],
+          },
+        },
+      },
+      required: ['projectId', 'columnId', 'title', 'content'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).createCardWithSteps(
+        (args as { projectId: number; columnId: number }).projectId,
+        (args as { projectId: number; columnId: number }).columnId,
+        args as {
+          title: string;
+          content: string;
+          due_on?: string;
+          assignee_ids?: number[];
+          notify?: boolean;
+          steps?: Array<{ title: string; due_on?: string; assignees?: string }>;
+        }
+      ),
+  },
+  {
+    name: 'card_tables.update_card',
+    description: 'Update a card (projectId, cardId, fields...)',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        cardId: { type: 'number' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        due_on: { type: 'string' },
+        assignee_ids: { type: 'array', items: { type: 'number' } },
+      },
+      required: ['projectId', 'cardId'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).updateCard(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId,
+        args as {
+          title?: string;
+          content?: string;
+          due_on?: string | null;
+          assignee_ids?: number[];
+        }
+      ),
+  },
+  {
+    name: 'card_tables.move_card',
+    description: 'Move a card to another column',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        cardId: { type: 'number' },
+        columnId: { type: 'number' },
+      },
+      required: ['projectId', 'cardId', 'columnId'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).moveCard(
+        (args as { projectId: number; cardId: number; columnId: number }).projectId,
+        (args as { projectId: number; cardId: number; columnId: number }).cardId,
+        (args as { projectId: number; cardId: number; columnId: number }).columnId
+      ),
+  },
+  {
+    name: 'card_tables.trash_card',
+    description: 'Trash a card (moves to trash)',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, cardId: { type: 'number' } },
+      required: ['projectId', 'cardId'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).trashCard(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId
+      ),
+  },
+  {
+    name: 'card_tables.archive_card',
+    description: 'Archive a card',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, cardId: { type: 'number' } },
+      required: ['projectId', 'cardId'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).archiveCard(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId
+      ),
+  },
+  {
+    name: 'card_tables.unarchive_card',
+    description: 'Unarchive a card (set status to active)',
+    schema: {
+      type: 'object',
+      properties: { projectId: { type: 'number' }, cardId: { type: 'number' } },
+      required: ['projectId', 'cardId'],
+    },
+    handler: async (client, args) =>
+      new CardTablesResource(client).unarchiveCard(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId
       ),
   },
   peopleList(),
@@ -439,6 +634,91 @@ export const actions: ActionDef[] = [
         (args as { projectId: number; commentId: number }).projectId,
         (args as { projectId: number; commentId: number }).commentId,
         { content: (args as { content: string }).content }
+      ),
+  },
+  // Steps actions
+  {
+    name: 'steps.create',
+    description: 'Create a step in a card (projectId, cardId, title, optional due_on/assignees)',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        cardId: { type: 'number' },
+        title: { type: 'string' },
+        due_on: { type: 'string' },
+        assignees: { type: 'string' },
+      },
+      required: ['projectId', 'cardId', 'title'],
+    },
+    handler: async (client, args) =>
+      new StepsResource(client).create(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId,
+        args as { title: string; due_on?: string; assignees?: string }
+      ),
+  },
+  {
+    name: 'steps.update',
+    description: 'Update a step (projectId, stepId, optional title/due_on/assignees)',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        stepId: { type: 'number' },
+        title: { type: 'string' },
+        due_on: { type: 'string' },
+        assignees: { type: 'string' },
+      },
+      required: ['projectId', 'stepId'],
+    },
+    handler: async (client, args) =>
+      new StepsResource(client).update(
+        (args as { projectId: number; stepId: number }).projectId,
+        (args as { projectId: number; stepId: number }).stepId,
+        args as { title?: string; due_on?: string; assignees?: string }
+      ),
+  },
+  {
+    name: 'steps.complete',
+    description: 'Mark a step as completed or uncompleted',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        stepId: { type: 'number' },
+        completion: { type: 'string', enum: ['on', 'off'] },
+      },
+      required: ['projectId', 'stepId', 'completion'],
+    },
+    handler: async (client, args) =>
+      new StepsResource(client).complete(
+        (args as { projectId: number; stepId: number; completion: 'on' | 'off' }).projectId,
+        (args as { projectId: number; stepId: number; completion: 'on' | 'off' }).stepId,
+        (args as { projectId: number; stepId: number; completion: 'on' | 'off' }).completion
+      ),
+  },
+  {
+    name: 'steps.reposition',
+    description: 'Reposition a step within its card',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'number' },
+        cardId: { type: 'number' },
+        source_id: { type: 'number' },
+        position: { type: 'number' },
+      },
+      required: ['projectId', 'cardId', 'source_id', 'position'],
+    },
+    handler: async (client, args) =>
+      new StepsResource(client).reposition(
+        (args as { projectId: number; cardId: number }).projectId,
+        (args as { projectId: number; cardId: number }).cardId,
+        {
+          source_id: (args as { source_id: number }).source_id,
+          position: (args as { position: number }).position,
+        }
       ),
   },
 ];
