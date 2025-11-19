@@ -55,6 +55,7 @@ export interface BucketProjectRef {
 }
 
 export interface Todo extends Identified, Timestamped, Urls {
+  status?: 'active' | 'archived' | 'trashed';
   title?: string;
   content: string;
   description?: string;
@@ -62,9 +63,13 @@ export interface Todo extends Identified, Timestamped, Urls {
   completion_url?: string;
   comments_count?: number;
   comments_url?: string;
+  position?: number;
   parent?: TodoListRef;
   bucket?: BucketProjectRef;
   assignees?: Person[];
+  completion_subscribers?: Person[];
+  starts_on?: string | null;
+  due_on?: string | null;
 }
 
 export interface CardTableList extends Identified, Timestamped, Urls {
@@ -80,12 +85,49 @@ export interface CardTable extends Identified, Timestamped, Urls {
   bucket?: BucketProjectRef;
 }
 
+export interface Step extends Identified, Timestamped, Urls {
+  status?: 'active' | 'archived' | 'trashed';
+  title: string;
+  completed: boolean;
+  due_on?: string | null;
+  assignees?: Person[];
+  completion_url?: string;
+  position?: number;
+  parent?: {
+    id: number;
+    title: string;
+    type: string;
+    url?: string;
+    app_url?: string;
+  };
+  bucket?: BucketProjectRef;
+}
+
 export interface Card extends Identified, Timestamped, Urls {
+  status?: 'active' | 'archived' | 'trashed';
   title?: string;
   name?: string;
-  status?: string;
+  content?: string;
+  description?: string;
   archived?: boolean;
+  completed?: boolean;
   comment_count?: number;
+  comments_count?: number;
+  comments_url?: string;
+  position?: number;
+  due_on?: string | null;
+  assignees?: Person[];
+  completion_subscribers?: Person[];
+  completion_url?: string;
+  parent?: {
+    id: number;
+    title: string;
+    type: string;
+    url?: string;
+    app_url?: string;
+  };
+  bucket?: BucketProjectRef;
+  steps?: Step[]; // Card steps (kanban sub-tasks)
 }
 
 export interface Message extends Identified, Timestamped, Urls {

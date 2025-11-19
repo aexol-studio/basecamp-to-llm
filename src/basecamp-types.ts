@@ -183,3 +183,81 @@ export interface Company4 {
   id: number;
   name: string;
 }
+
+// Card Table Steps Types
+export interface Step {
+  id: number;
+  status: string;
+  visible_to_clients: boolean;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  inherits_status: boolean;
+  type: string;
+  url: string;
+  app_url: string;
+  bookmark_url: string;
+  subscription_url: string;
+  completed: boolean;
+  due_on?: string;
+  assignees?: Assignee[];
+  completion_url: string;
+  position: number;
+  bucket: Bucket;
+  creator: Creator;
+  parent: StepParent;
+}
+
+export interface Assignee {
+  id: number;
+  attachable_sgid: string;
+  name: string;
+  email_address: string;
+  personable_type: string;
+  title: string;
+  bio: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+  admin: boolean;
+  owner: boolean;
+  client: boolean;
+  employee: boolean;
+  time_zone: string;
+  avatar_url: string;
+  company: Company;
+  can_ping: boolean;
+  can_manage_projects: boolean;
+  can_manage_people: boolean;
+  can_access_timesheet: boolean;
+  can_access_hill_charts: boolean;
+}
+
+export interface StepParent {
+  id: number;
+  title: string;
+  type: string;
+  url: string;
+  app_url: string;
+}
+
+export interface CreateStepParams {
+  title: string;
+  due_on?: string;
+  assignees?: string; // comma-separated list of person IDs
+}
+
+export interface UpdateStepParams {
+  title?: string;
+  due_on?: string;
+  assignees?: string; // comma-separated list of person IDs
+}
+
+export interface CompleteStepParams {
+  completion: 'on' | 'off';
+}
+
+export interface RepositionStepParams {
+  source_id: number;
+  position: number;
+}
