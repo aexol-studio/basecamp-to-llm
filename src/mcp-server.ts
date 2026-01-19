@@ -186,7 +186,11 @@ export class BasecampMCPServer {
                 {
                   type: 'text',
                   text: JSON.stringify(
-                    { filename: result.filename, mimeType: result.mimeType, savedPath: result.savedPath },
+                    {
+                      filename: result.filename,
+                      mimeType: result.mimeType,
+                      savedPath: result.savedPath,
+                    },
                     null,
                     2
                   ),
