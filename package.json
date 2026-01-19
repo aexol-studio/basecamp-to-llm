@@ -1,6 +1,6 @@
 {
   "name": "@aexol-studio/basecamp-to-llm",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "CLI tool to fetch Basecamp todos and convert them to LLM-friendly task formats",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
