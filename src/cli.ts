@@ -19,7 +19,7 @@ program
   .argument('<project-name>', 'Name of the Basecamp project')
   .option('-t, --table <table-name>', 'Specific kanban board name')
   .option('-c, --column <column-name>', 'Specific column name to filter by')
-  .option('-o, --out <output-path>', 'Output file path (default: .codex/tasks.json)')
+  .option('-o, --out <output-path>', 'Output file path (default: .basecamp/tasks.json)')
   .option('--open', 'Open browser for OAuth authorization')
   .action(async (projectName: string, options) => {
     try {

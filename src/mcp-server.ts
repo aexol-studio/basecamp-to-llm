@@ -6,6 +6,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { BasecampFetcher } from './basecamp-fetcher.js';
 import { BasecampClient, type HttpMethod, type RequestOptions } from './sdk/client.js';
 import { actions as sdkActions } from './sdk/registry.js';
+import { downloadAttachment } from './sdk/resources/enrichedCards.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -60,41 +61,6 @@ export class BasecampMCPServer {
       return {
         tools: [
           {
-            name: 'list_projects',
-            description: 'List all available Basecamp projects',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
-          },
-          {
-            name: 'fetch_todos',
-            description: 'Fetch todos from a Basecamp project and convert to tasks',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                projectName: {
-                  type: 'string',
-                  description: 'Name of the Basecamp project',
-                },
-                tableName: {
-                  type: 'string',
-                  description: 'Optional: Specific kanban board name',
-                },
-                columnName: {
-                  type: 'string',
-                  description: 'Optional: Specific column name to filter by',
-                },
-                outputPath: {
-                  type: 'string',
-                  description: 'Optional: Custom output path for tasks file',
-                },
-              },
-              required: ['projectName'],
-            },
-          },
-          {
             name: 'authenticate',
             description: 'Authenticate with Basecamp (opens browser for OAuth)',
             inputSchema: {
@@ -107,20 +73,6 @@ export class BasecampMCPServer {
                 },
               },
               required: [],
-            },
-          },
-          {
-            name: 'get_project_info',
-            description: 'Get detailed information about a specific project',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                projectName: {
-                  type: 'string',
-                  description: 'Name of the Basecamp project',
-                },
-              },
-              required: ['projectName'],
             },
           },
           {
@@ -158,10 +110,29 @@ export class BasecampMCPServer {
           },
           // Dynamic SDK actions (MCP-safe names)
           ...sdkTools,
+          // Attachments download (special handling for images)
           {
-            name: 'sdk_list_actions',
-            description: 'List all available typed SDK actions and their schemas',
-            inputSchema: { type: 'object', properties: {} },
+            name: 'sdk_attachments_download',
+            description:
+              'Download an attachment/image from Basecamp. Returns base64 data and saves to .basecamp/images/. Use downloadUrl from enriched card images.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                url: {
+                  type: 'string',
+                  description: 'Download URL from image.downloadUrl',
+                },
+                filename: {
+                  type: 'string',
+                  description: 'Filename to save as',
+                },
+                mimeType: {
+                  type: 'string',
+                  description: 'MIME type (e.g., image/png)',
+                },
+              },
+              required: ['url'],
+            },
           },
         ],
       };
@@ -173,26 +144,8 @@ export class BasecampMCPServer {
 
       try {
         switch (name) {
-          case 'list_projects':
-            return await this.handleListProjects();
-
-          case 'fetch_todos':
-            return await this.handleFetchTodos(
-              (args as {
-                projectName: string;
-                tableName?: string;
-                columnName?: string;
-                outputPath?: string;
-              }) || { projectName: '' }
-            );
-
           case 'authenticate':
             return await this.handleAuthenticate((args as { openBrowser?: boolean }) || {});
-
-          case 'get_project_info':
-            return await this.handleGetProjectInfo(
-              (args as { projectName: string }) || { projectName: '' }
-            );
 
           case 'api_request':
             return await this.handleApiRequest(
@@ -204,6 +157,43 @@ export class BasecampMCPServer {
                 absolute?: boolean;
               }) || { method: 'GET', path: '' }
             );
+
+          case 'sdk_attachments_download': {
+            const { url, filename, mimeType } = args as {
+              url: string;
+              filename?: string;
+              mimeType?: string;
+            };
+            const client = new BasecampClient();
+            const result = await downloadAttachment(client, url, filename, mimeType);
+
+            // Return image as content block for LLM vision
+            if (result.base64 && result.mimeType.startsWith('image/')) {
+              return {
+                content: [
+                  {
+                    type: 'image',
+                    data: result.base64,
+                    mimeType: result.mimeType,
+                  },
+                ],
+              };
+            }
+
+            // Fallback: return metadata only
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    { filename: result.filename, mimeType: result.mimeType, savedPath: result.savedPath },
+                    null,
+                    2
+                  ),
+                },
+              ],
+            };
+          }
 
           default: {
             // Accept both original names like 'sdk:projects.list' and safe names like 'sdk_projects_list'
@@ -219,29 +209,29 @@ export class BasecampMCPServer {
               if (!def) throw new Error(`Unknown SDK action: ${originalName}`);
               const client = new BasecampClient();
               const res = await def.handler(client, (args as Record<string, unknown>) ?? {});
+
+              // Handle image responses - return as image content block for LLM vision
+              if (res && typeof res === 'object' && 'base64' in res && 'mimeType' in res) {
+                const { base64, mimeType } = res as { base64: string; mimeType: string };
+                if (typeof mimeType === 'string' && mimeType.startsWith('image/')) {
+                  return {
+                    content: [
+                      {
+                        type: 'image',
+                        data: base64,
+                        mimeType: mimeType,
+                      },
+                    ],
+                  };
+                }
+              }
+
+              // Default: return as text/JSON
               return {
                 content: [
                   {
                     type: 'text',
                     text: typeof res === 'string' ? res : JSON.stringify(res, null, 2),
-                  },
-                ],
-              };
-            }
-            if (name === 'sdk_list_actions') {
-              const list = sdkActions.map(a => ({
-                original: a.name,
-                safe:
-                  this.originalToSafe.get(a.name) ||
-                  'sdk_' + a.name.replace(/[^A-Za-z0-9_-]/g, '_'),
-                description: a.description,
-                schema: a.schema,
-              }));
-              return {
-                content: [
-                  {
-                    type: 'text',
-                    text: JSON.stringify(list, null, 2),
                   },
                 ],
               };
@@ -287,53 +277,6 @@ export class BasecampMCPServer {
     };
   }
 
-  private async handleListProjects() {
-    const projects = await this.getFetcher().listProjects();
-
-    const projectList = projects
-      .map(
-        project =>
-          `- **${project.name}** (ID: ${project.id})${project.archived ? ' [ARCHIVED]' : ''}`
-      )
-      .join('\n');
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `## Available Basecamp Projects\n\n${projectList}\n\nTotal: ${projects.length} project(s)`,
-        },
-      ],
-    };
-  }
-
-  private async handleFetchTodos(args: {
-    projectName: string;
-    tableName?: string;
-    columnName?: string;
-    outputPath?: string;
-  }) {
-    const { projectName, tableName, columnName, outputPath } = args;
-
-    await this.getFetcher().fetchTodos(projectName, {
-      tableName,
-      columnName,
-      outputPath,
-    });
-
-    const outputFile = outputPath || '.codex/tasks.json';
-    const markdownFile = outputPath?.replace('.json', '.md') || '.codex/tasks.md';
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `✅ Successfully fetched todos from project **${projectName}**\n\nFiles created:\n- \`${outputFile}\` - JSON format for Codex CLI\n- \`${markdownFile}\` - Human-readable Markdown format\n\nYou can now load these tasks into Codex CLI or use them in your project.`,
-        },
-      ],
-    };
-  }
-
   private async handleAuthenticate(args: { openBrowser?: boolean }) {
     const { openBrowser = true } = args;
 
@@ -344,37 +287,6 @@ export class BasecampMCPServer {
         {
           type: 'text',
           text: `✅ Successfully authenticated with Basecamp!\n\nYou can now use other Basecamp tools.`,
-        },
-      ],
-    };
-  }
-
-  private async handleGetProjectInfo(args: { projectName: string }) {
-    const { projectName } = args;
-    const projects = await this.getFetcher().listProjects();
-
-    const project = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
-
-    if (!project) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `❌ Project **${projectName}** not found.\n\nAvailable projects:\n${projects
-              .map(p => `- ${p.name}`)
-              .join('\n')}`,
-          },
-        ],
-      };
-    }
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `## Project Information\n\n**Name:** ${project.name}\n**ID:** ${project.id}\n**Status:** ${
-            project.archived ? 'Archived' : 'Active'
-          }\n\nYou can use this project with the \`fetch_todos\` tool.`,
         },
       ],
     };

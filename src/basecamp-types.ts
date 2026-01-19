@@ -261,3 +261,82 @@ export interface RepositionStepParams {
   source_id: number;
   position: number;
 }
+
+// Comment Types
+export interface Comment {
+  id: number;
+  status: string;
+  visible_to_clients: boolean;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  inherits_status: boolean;
+  type: string;
+  url: string;
+  app_url: string;
+  bookmark_url: string;
+  parent: Parent;
+  bucket: Bucket;
+  creator: Creator;
+  content: string;
+}
+
+// Attachment Types (extracted from comment content)
+export interface Attachment {
+  sgid: string;
+  contentType: string;
+  url: string;
+  downloadUrl: string;
+  filename: string;
+  filesize: number;
+  width?: number;
+  height?: number;
+  previewable: boolean;
+  presentation?: string;
+}
+
+// Enriched Card with Comments and Visual Context
+export interface EnrichedCardContext {
+  card: {
+    id: number;
+    title: string;
+    description: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    creator: Creator;
+    steps: Step[];
+    assignees: Assignee[];
+    due_on?: string;
+    project: {
+      id: number;
+      name: string;
+    };
+    column: {
+      id: number;
+      name: string;
+    };
+  };
+  comments: Array<{
+    id: number;
+    creator: Creator;
+    created_at: string;
+    content: string;
+    attachments: Attachment[];
+  }>;
+  images: Array<{
+    url: string;
+    downloadUrl?: string; // Direct download URL for authenticated download
+    source: 'card' | 'comment';
+    sourceId: number;
+    creator: string;
+    metadata: {
+      filename: string;
+      size: number;
+      dimensions?: { width: number; height: number };
+    };
+    base64?: string; // Base64 encoded image data for vision AI
+    mimeType?: string; // MIME type for vision AI (e.g., 'image/png')
+    tempPath?: string; // Temporary file path (to be cleaned up)
+  }>;
+}
