@@ -62,7 +62,7 @@ export class BasecampFetcher {
 
   private readonly API_BASE = 'https://3.basecampapi.com';
   private readonly LAUNCHPAD = 'https://launchpad.37signals.com';
-  private readonly tokenPath = path.join(process.cwd(), '.codex', 'basecamp-token.json');
+  private readonly tokenPath = path.join(process.cwd(), '.basecamp', 'basecamp-token.json');
 
   constructor() {
     this.validateEnvironment();
@@ -366,18 +366,18 @@ export class BasecampFetcher {
 
     this.log(`Collected ${plan.length} open item(s)`);
 
-    const codexDir = path.join(process.cwd(), '.codex');
-    await fs.mkdir(codexDir, { recursive: true });
+    const basecampDir = path.join(process.cwd(), '.basecamp');
+    await fs.mkdir(basecampDir, { recursive: true });
 
-    const jsonPath = path.join(codexDir, 'tasks.json');
-    const mdPath = path.join(codexDir, 'tasks.md');
+    const jsonPath = path.join(basecampDir, 'tasks.json');
+    const mdPath = path.join(basecampDir, 'tasks.md');
 
     const outJsonPath = options.outputPath ? path.resolve(options.outputPath) : jsonPath;
 
     await fs.writeFile(outJsonPath, JSON.stringify({ plan }, null, 2), 'utf8');
     // Also write a human-friendly markdown variant
     const md = [
-      `# Codex Tasks from Basecamp: ${project.name}`,
+      `# Tasks from Basecamp: ${project.name}`,
       '',
       ...plan.map(p => `- [ ] ${p.step}`),
       '',

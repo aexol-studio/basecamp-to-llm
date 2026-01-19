@@ -93,8 +93,8 @@ describe('MCP Server Functionality', () => {
       expect(columnName).toBe('In Progress');
       expect(outputPath).toBe('./custom-output.json');
 
-      const outputFile = outputPath || '.codex/tasks.json';
-      const markdownFile = outputPath?.replace('.json', '.md') || '.codex/tasks.md';
+      const outputFile = outputPath || '.basecamp/tasks.json';
+      const markdownFile = outputPath?.replace('.json', '.md') || '.basecamp/tasks.md';
 
       const result = {
         content: [
@@ -116,11 +116,11 @@ describe('MCP Server Functionality', () => {
       };
 
       const outputPath = (args as { outputPath?: string }).outputPath;
-      const outputFile = outputPath || '.codex/tasks.json';
-      const markdownFile = outputPath?.replace('.json', '.md') || '.codex/tasks.md';
+      const outputFile = outputPath || '.basecamp/tasks.json';
+      const markdownFile = outputPath?.replace('.json', '.md') || '.basecamp/tasks.md';
 
-      expect(outputFile).toBe('.codex/tasks.json');
-      expect(markdownFile).toBe('.codex/tasks.md');
+      expect(outputFile).toBe('.basecamp/tasks.json');
+      expect(markdownFile).toBe('.basecamp/tasks.md');
     });
   });
 

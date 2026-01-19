@@ -11,6 +11,8 @@ A CLI tool to fetch Basecamp todos and convert them to LLM-friendly task formats
 - 🚀 Easy-to-use CLI interface
 - 🔄 Automatic token refresh
 - 🤖 **MCP (Model Context Protocol) server for Codex/Cursor integration**
+- 🎨 **Enriched card context with comments and visual attachments (images)**
+- 🖼️ **Extract and analyze images from card comments for AI vision models**
 
 ## Installation
 
@@ -134,6 +136,7 @@ This package includes an MCP server that allows you to use Basecamp functionalit
 - `get_project_info` - Get project details
 - **🎯 Task Management (Recommended):**
   - `sdk_card_tables_create_task` - Create a complete task (card with description and steps) in one operation
+  - `sdk_card_tables_get_enriched` - Get card with comments, creator info, and visual attachments (images)
 - **Steps (Card Table Subtasks):**
   - `sdk_steps_create` - Create a step within a card
   - `sdk_steps_update` - Update an existing step
@@ -232,6 +235,22 @@ Requirements:
 
 console.log(`Created task: ${task.card.title} with ${task.steps.length} steps`);
 
+// 🎨 Get enriched card with comments and visual context
+const enriched = await cardTables.getEnrichedCard(projectId, cardId);
+
+console.log(`Card: ${enriched.card.title}`);
+console.log(`Comments: ${enriched.comments.length}`);
+console.log(`Images: ${enriched.images.length}`);
+
+// Access image URLs for vision AI analysis
+enriched.images.forEach(img => {
+  console.log(`- ${img.metadata.filename} by ${img.creator}`);
+  console.log(`  Preview: ${img.url}`);
+  if (img.metadata.dimensions) {
+    console.log(`  Size: ${img.metadata.dimensions.width}x${img.metadata.dimensions.height}px`);
+  }
+});
+
 // Work with Steps individually (if needed)
 const steps = new StepsResource(client);
 
@@ -260,6 +279,82 @@ await steps.reposition(projectId, cardId, {
   position: 2, // zero-indexed position
 });
 ```
+
+### Enriched Card Context with Visual Attachments
+
+The library can fetch cards with full comment history and extract visual attachments (images) for AI vision analysis:
+
+```typescript
+import { BasecampClient } from '@aexol-studio/basecamp-to-llm';
+import { getEnrichedCard, formatEnrichedCardAsText } from '@aexol-studio/basecamp-to-llm';
+
+const client = new BasecampClient();
+const projectId = 12345;
+const cardId = 67890;
+
+// Get enriched card with comments and images
+const enriched = await getEnrichedCard(client, projectId, cardId);
+
+console.log(`Card: ${enriched.card.title}`);
+console.log(`Project: ${enriched.card.project.name}`);
+console.log(`Steps: ${enriched.card.steps.length}`);
+console.log(`Comments: ${enriched.comments.length}`);
+console.log(`Images: ${enriched.images.length}`);
+
+// Access all images with metadata
+enriched.images.forEach((img, idx) => {
+  console.log(`\nImage ${idx + 1}:`);
+  console.log(`  Filename: ${img.metadata.filename}`);
+  console.log(`  Creator: ${img.creator}`);
+  console.log(`  Size: ${(img.metadata.size / 1024).toFixed(1)}KB`);
+  if (img.metadata.dimensions) {
+    console.log(
+      `  Dimensions: ${img.metadata.dimensions.width}x${img.metadata.dimensions.height}px`
+    );
+  }
+  console.log(`  Preview URL: ${img.url}`);
+});
+
+// Format as readable text for LLM context
+const textContext = formatEnrichedCardAsText(enriched);
+console.log('\n--- Formatted Text Context ---');
+console.log(textContext);
+
+// Use with vision AI models (e.g., GPT-4 Vision, Claude Vision)
+// The image URLs can be passed directly to vision models for analysis
+```
+
+**Example Output:**
+
+```
+Card: Multi-Company Accounting - Wsparcie wielu firm
+Project: KSIĘGOWOŚĆ
+Steps: 15
+Comments: 1
+Images: 1
+
+Image 1:
+  Filename: screenshot.png
+  Creator: Aleksander Bondar
+  Size: 24.3KB
+  Dimensions: 534x295px
+  Preview URL: https://preview.3.basecamp.com/5657330/blobs/.../previews/full
+```
+
+The enriched context includes:
+
+- **Card details**: title, description, status, creator, project, column
+- **All steps/subtasks**: with completion status, assignees, and due dates
+- **All comments**: with creator info, timestamps, and content
+- **Visual attachments**: extracted images with URLs, metadata, and creator info
+- **Formatted text output**: ready for LLM consumption
+
+This makes it perfect for:
+
+- Providing full context to AI assistants
+- Analyzing screenshots and diagrams in comments
+- Understanding task requirements from visual mockups
+- Generating summaries with visual context
 
 ## Development
 
