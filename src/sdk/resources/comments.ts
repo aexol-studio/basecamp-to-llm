@@ -1,5 +1,5 @@
-import { BasecampClient } from '../client.js';
-import type { Comment } from '../types.js';
+import { BasecampClient } from "../client.js";
+import type { Comment } from "../types.js";
 
 export class CommentsResource {
   constructor(private readonly client: BasecampClient) {}
@@ -9,7 +9,7 @@ export class CommentsResource {
    */
   listForRecording(projectId: number, recordingId: number) {
     return this.client.get<Comment[]>(
-      `/buckets/${projectId}/recordings/${recordingId}/comments.json`
+      `/buckets/${projectId}/recordings/${recordingId}/comments.json`,
     );
   }
 
@@ -18,22 +18,27 @@ export class CommentsResource {
    */
   listAllForRecording(projectId: number, recordingId: number) {
     return this.client.getAllPages<Comment>(
-      `/buckets/${projectId}/recordings/${recordingId}/comments.json`
+      `/buckets/${projectId}/recordings/${recordingId}/comments.json`,
     );
   }
 
   get(projectId: number, commentId: number) {
-    return this.client.get<Comment>(`/buckets/${projectId}/comments/${commentId}.json`);
+    return this.client.get<Comment>(
+      `/buckets/${projectId}/comments/${commentId}.json`,
+    );
   }
 
   create(projectId: number, recordingId: number, body: { content: string }) {
     return this.client.post<Comment>(
       `/buckets/${projectId}/recordings/${recordingId}/comments.json`,
-      body
+      body,
     );
   }
 
   update(projectId: number, commentId: number, body: { content: string }) {
-    return this.client.put<Comment>(`/buckets/${projectId}/comments/${commentId}.json`, body);
+    return this.client.put<Comment>(
+      `/buckets/${projectId}/comments/${commentId}.json`,
+      body,
+    );
   }
 }

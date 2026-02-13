@@ -19,13 +19,18 @@ export interface ListCardsResponse {
   lists: List[];
 }
 
+export interface Company {
+  id: number;
+  name: string;
+}
+
 export interface Bucket {
   id: number;
   name: string;
   type: string;
 }
 
-export interface Creator {
+export interface Person {
   id: number;
   attachable_sgid: string;
   name: string;
@@ -50,40 +55,10 @@ export interface Creator {
   can_access_hill_charts: boolean;
 }
 
-export interface Company {
-  id: number;
-  name: string;
-}
-
-export interface Subscriber {
-  id: number;
-  attachable_sgid: string;
-  name: string;
-  email_address: string;
-  personable_type: string;
-  title: string;
-  bio: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-  admin: boolean;
-  owner: boolean;
-  client: boolean;
-  employee: boolean;
-  time_zone: string;
-  avatar_url: string;
-  company: Company2;
-  can_ping: boolean;
-  can_manage_projects: boolean;
-  can_manage_people: boolean;
-  can_access_timesheet: boolean;
-  can_access_hill_charts: boolean;
-}
-
-export interface Company2 {
-  id: number;
-  name: string;
-}
+// Backward-compatible type aliases
+export type Creator = Person;
+export type Subscriber = Person;
+export type Assignee = Person;
 
 export interface List {
   id: number;
@@ -99,10 +74,10 @@ export interface List {
   bookmark_url: string;
   subscription_url: string;
   parent: Parent;
-  bucket: Bucket2;
-  creator: Creator2;
+  bucket: Bucket;
+  creator: Creator;
   description?: string;
-  subscribers: Subscriber2[];
+  subscribers: Subscriber[];
   color?: string;
   cards_count: number;
   comment_count: number;
@@ -116,72 +91,6 @@ export interface Parent {
   type: string;
   url: string;
   app_url: string;
-}
-
-export interface Bucket2 {
-  id: number;
-  name: string;
-  type: string;
-}
-
-export interface Creator2 {
-  id: number;
-  attachable_sgid: string;
-  name: string;
-  email_address: string;
-  personable_type: string;
-  title: string;
-  bio: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-  admin: boolean;
-  owner: boolean;
-  client: boolean;
-  employee: boolean;
-  time_zone: string;
-  avatar_url: string;
-  company: Company3;
-  can_ping: boolean;
-  can_manage_projects: boolean;
-  can_manage_people: boolean;
-  can_access_timesheet: boolean;
-  can_access_hill_charts: boolean;
-}
-
-export interface Company3 {
-  id: number;
-  name: string;
-}
-
-export interface Subscriber2 {
-  id: number;
-  attachable_sgid: string;
-  name: string;
-  email_address: string;
-  personable_type: string;
-  title: string;
-  bio: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-  admin: boolean;
-  owner: boolean;
-  client: boolean;
-  employee: boolean;
-  time_zone: string;
-  avatar_url: string;
-  company: Company4;
-  can_ping: boolean;
-  can_manage_projects: boolean;
-  can_manage_people: boolean;
-  can_access_timesheet: boolean;
-  can_access_hill_charts: boolean;
-}
-
-export interface Company4 {
-  id: number;
-  name: string;
 }
 
 // Card Table Steps Types
@@ -208,58 +117,12 @@ export interface Step {
   parent: StepParent;
 }
 
-export interface Assignee {
-  id: number;
-  attachable_sgid: string;
-  name: string;
-  email_address: string;
-  personable_type: string;
-  title: string;
-  bio: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-  admin: boolean;
-  owner: boolean;
-  client: boolean;
-  employee: boolean;
-  time_zone: string;
-  avatar_url: string;
-  company: Company;
-  can_ping: boolean;
-  can_manage_projects: boolean;
-  can_manage_people: boolean;
-  can_access_timesheet: boolean;
-  can_access_hill_charts: boolean;
-}
-
 export interface StepParent {
   id: number;
   title: string;
   type: string;
   url: string;
   app_url: string;
-}
-
-export interface CreateStepParams {
-  title: string;
-  due_on?: string;
-  assignees?: string; // comma-separated list of person IDs
-}
-
-export interface UpdateStepParams {
-  title?: string;
-  due_on?: string;
-  assignees?: string; // comma-separated list of person IDs
-}
-
-export interface CompleteStepParams {
-  completion: 'on' | 'off';
-}
-
-export interface RepositionStepParams {
-  source_id: number;
-  position: number;
 }
 
 // Comment Types
@@ -327,7 +190,7 @@ export interface EnrichedCardContext {
   images: Array<{
     url: string;
     downloadUrl?: string; // Direct download URL for authenticated download
-    source: 'card' | 'comment';
+    source: "card" | "comment";
     sourceId: number;
     creator: string;
     metadata: {

@@ -100,3 +100,8 @@ jspm_packages/
 
 # Basecamp token cache
 .codex/
+
+.basecamp
+
+# Basecamp API reference docs (not for npm publish)
+bc3-api/

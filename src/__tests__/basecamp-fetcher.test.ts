@@ -1,24 +1,26 @@
-import { BasecampFetcher } from '../basecamp-fetcher';
+import { BasecampFetcher } from "../basecamp-fetcher";
 
-describe('BasecampFetcher', () => {
+describe("BasecampFetcher", () => {
   beforeEach(() => {
     // Mock environment variables for testing
-    process.env['BASECAMP_USER_AGENT'] = 'Test App (test@example.com)';
+    process.env["BASECAMP_USER_AGENT"] = "Test App (test@example.com)";
   });
 
   afterEach(() => {
     // Clean up environment variables
-    delete process.env['BASECAMP_USER_AGENT'];
+    delete process.env["BASECAMP_USER_AGENT"];
   });
 
-  describe('constructor', () => {
-    it('should throw error when BASECAMP_USER_AGENT is not set', () => {
-      delete process.env['BASECAMP_USER_AGENT'];
-      expect(() => new BasecampFetcher()).toThrow('Missing env BASECAMP_USER_AGENT');
+  describe("constructor", () => {
+    it("should throw error when BASECAMP_USER_AGENT is not set", () => {
+      delete process.env["BASECAMP_USER_AGENT"];
+      expect(() => new BasecampFetcher()).toThrow(
+        "Missing env BASECAMP_USER_AGENT",
+      );
     });
 
-    it('should not throw error when BASECAMP_USER_AGENT is set', () => {
-      process.env['BASECAMP_USER_AGENT'] = 'Test App (test@example.com)';
+    it("should not throw error when BASECAMP_USER_AGENT is set", () => {
+      process.env["BASECAMP_USER_AGENT"] = "Test App (test@example.com)";
       expect(() => new BasecampFetcher()).not.toThrow();
     });
   });

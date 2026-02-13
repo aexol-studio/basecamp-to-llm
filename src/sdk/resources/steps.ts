@@ -1,5 +1,5 @@
-import { BasecampClient } from '../client.js';
-import type { Step } from '../types.js';
+import { BasecampClient } from "../client.js";
+import type { Step } from "../types.js";
 
 export interface CreateStepBody {
   title: string;
@@ -14,7 +14,7 @@ export interface UpdateStepBody {
 }
 
 export interface CompleteStepBody {
-  completion: 'on' | 'off';
+  completion: "on" | "off";
 }
 
 export interface RepositionStepBody {
@@ -31,7 +31,7 @@ export class StepsResource {
    */
   getStepsForCard(projectId: number, cardId: number) {
     return this.client.get<{ steps: Step[] }>(
-      `/buckets/${projectId}/card_tables/cards/${cardId}.json`
+      `/buckets/${projectId}/card_tables/cards/${cardId}.json`,
     );
   }
 
@@ -41,7 +41,7 @@ export class StepsResource {
   create(projectId: number, cardId: number, body: CreateStepBody) {
     return this.client.post<Step>(
       `/buckets/${projectId}/card_tables/cards/${cardId}/steps.json`,
-      body
+      body,
     );
   }
 
@@ -49,16 +49,19 @@ export class StepsResource {
    * Update an existing step
    */
   update(projectId: number, stepId: number, body: UpdateStepBody) {
-    return this.client.put<Step>(`/buckets/${projectId}/card_tables/steps/${stepId}.json`, body);
+    return this.client.put<Step>(
+      `/buckets/${projectId}/card_tables/steps/${stepId}.json`,
+      body,
+    );
   }
 
   /**
    * Mark a step as completed or uncompleted
    */
-  complete(projectId: number, stepId: number, completion: 'on' | 'off') {
+  complete(projectId: number, stepId: number, completion: "on" | "off") {
     return this.client.put<Step>(
       `/buckets/${projectId}/card_tables/steps/${stepId}/completions.json`,
-      { completion }
+      { completion },
     );
   }
 
@@ -68,7 +71,7 @@ export class StepsResource {
   reposition(projectId: number, cardId: number, body: RepositionStepBody) {
     return this.client.post<void>(
       `/buckets/${projectId}/card_tables/cards/${cardId}/positions.json`,
-      body
+      body,
     );
   }
 }

@@ -1,8 +1,8 @@
-import { BasecampClient } from '../client.js';
-import type { Project } from '../types.js';
+import { BasecampClient } from "../client.js";
+import type { Project } from "../types.js";
 
 export interface ListProjectsParams {
-  status?: 'archived' | 'trashed';
+  status?: "archived" | "trashed";
   page?: number;
 }
 
@@ -10,7 +10,7 @@ export class ProjectsResource {
   constructor(private readonly client: BasecampClient) {}
 
   list(params: ListProjectsParams = {}) {
-    return this.client.get<Project[]>('/projects.json', {
+    return this.client.get<Project[]>("/projects.json", {
       query: params as Record<string, string | number | boolean | undefined>,
     });
   }
@@ -20,7 +20,7 @@ export class ProjectsResource {
   }
 
   create(body: Partial<Project> & { name: string }) {
-    return this.client.post<Project>('/projects.json', body);
+    return this.client.post<Project>("/projects.json", body);
   }
 
   update(projectId: number, body: Partial<Project>) {

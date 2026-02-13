@@ -1,43 +1,26 @@
 # @aexol-studio/basecamp-to-llm
 
-A CLI tool to fetch Basecamp todos and convert them to LLM-friendly task formats like Codex tasks.
+Basecamp MCP server and CLI for AI-assisted project management. Connect your IDE (Codex, Cursor, OpenCode) to Basecamp via the Model Context Protocol.
 
 ## Features
 
-- 🔐 OAuth2 authentication with Basecamp
-- 📋 Fetch todos from Basecamp projects
-- 🎯 Filter by specific kanban boards and columns
-- 📝 Export to JSON and Markdown formats
-- 🚀 Easy-to-use CLI interface
-- 🔄 Automatic token refresh
-- 🤖 **MCP (Model Context Protocol) server for Codex/Cursor integration**
-- 🎨 **Enriched card context with comments and visual attachments (images)**
-- 🖼️ **Extract and analyze images from card comments for AI vision models**
+- **MCP Server** — 13 tools for managing Basecamp projects, cards, steps, comments, and attachments directly from your IDE
+- **CLI** — Authenticate, list projects, call any Basecamp API endpoint, and run SDK actions from the terminal
+- **Typed SDK** — Modular TypeScript SDK covering projects, card tables, people, comments, steps, messages, and todos
+- **OAuth2 Authentication** — Secure token-based auth with automatic refresh
+- **Enriched Cards** — Fetch cards with full comment history, visual attachments (images), and formatted text output for LLM context
+- **Kanban Management** — Create tasks with checklists, move cards between columns, update assignees and due dates
 
-## Installation
+## Quick Start
 
-```bash
-npm install -g @aexol-studio/basecamp-to-llm
-```
+### 1. Create a Basecamp OAuth App
 
-Or use it directly with npx:
-
-```bash
-npx @aexol-studio/basecamp-to-llm --help
-```
-
-## Setup
-
-### 1. Create a Basecamp OAuth2 App
-
-1. Go to [Basecamp Admin](https://launchpad.37signals.com/integrations)
+1. Go to [https://launchpad.37signals.com/integrations](https://launchpad.37signals.com/integrations)
 2. Create a new integration
-3. Set the redirect URI to `http://localhost:8787/callback` (or your preferred local URL)
-4. Note down your `client_id` and `client_secret`
+3. Set the redirect URI to `http://localhost:8787/callback`
+4. Note your `client_id` and `client_secret`
 
-### 2. Set Environment Variables
-
-Create a `.env` file or set these environment variables:
+### 2. Environment Variables
 
 ```bash
 export BASECAMP_CLIENT_ID="your_client_id"
@@ -46,405 +29,254 @@ export BASECAMP_REDIRECT_URI="http://localhost:8787/callback"
 export BASECAMP_USER_AGENT="Your App Name (your@email.com)"
 ```
 
-**Required:**
-
-- `BASECAMP_CLIENT_ID`: Your OAuth2 client ID from Basecamp
-- `BASECAMP_CLIENT_SECRET`: Your OAuth2 client secret from Basecamp
-- `BASECAMP_REDIRECT_URI`: Must match your app config (e.g., `http://localhost:8787/callback`)
-- `BASECAMP_USER_AGENT`: Required by Basecamp API (e.g., `"My App (you@example.com)"`)
-
-**Optional:**
-
-- `BASECAMP_ACCOUNT_ID`: Force a specific account ID (otherwise auto-detected)
-
-## Usage
-
-### CLI Usage
-
-#### Authentication
-
-First, authenticate with Basecamp:
+### 3. Install
 
 ```bash
-basecamp-to-llm auth --open
+npm install @aexol-studio/basecamp-to-llm
 ```
 
-This will open your browser for OAuth authorization and cache the token locally.
-
-#### List Available Projects
+### 4. Authenticate
 
 ```bash
-basecamp-to-llm projects
+npx @aexol-studio/basecamp-to-llm auth --open
 ```
 
-#### Fetch Todos from a Project
+## MCP Server Setup
+
+Install as a dev dependency in your project:
 
 ```bash
-# Basic usage
-basecamp-to-llm fetch "My Project Name"
-
-# With specific kanban board
-basecamp-to-llm fetch "My Project Name" --table "Sprint Board"
-
-# With specific column
-basecamp-to-llm fetch "My Project Name" --column "In Progress"
-
-# Custom output path
-basecamp-to-llm fetch "My Project Name" --out ./my-tasks.json
-
-# Open browser for re-authentication if needed
-basecamp-to-llm fetch "My Project Name" --open
+npm install --save-dev @aexol-studio/basecamp-to-llm
 ```
 
-### MCP (Model Context Protocol) Integration
+Then configure your IDE:
 
-This package includes an MCP server that allows you to use Basecamp functionality directly within Codex and Cursor.
+<details>
+<summary><strong>Codex</strong></summary>
 
-#### Quick Setup
+Create `.codex/config.toml`:
 
-1. **Install as dev dependency:**
+```toml
+[mcpServers.basecamp]
+command = "npx"
+args = ["-y", "@aexol-studio/basecamp-to-llm", "mcp"]
 
-   ```bash
-   npm install --save-dev @aexol-studio/basecamp-to-llm
-   ```
-
-2. **Run setup script:**
-
-   ```bash
-   npx @aexol-studio/basecamp-to-llm setup-mcp
-   ```
-
-   Or manually copy configuration:
-
-   ```bash
-   # For Codex (TOML)
-   cp node_modules/@aexol-studio/basecamp-to-llm/configs/codex.toml .codex/config.toml
-
-   # For Cursor
-   cp node_modules/@aexol-studio/basecamp-to-llm/configs/cursor.json .cursor/config.json
-   ```
-
-3. **Set environment variables** (see Setup section above)
-
-4. **Restart your IDE**
-
-#### Available MCP Tools
-
-- `list_projects` - List all Basecamp projects
-- `fetch_todos` - Fetch todos from a project
-- `authenticate` - Authenticate with Basecamp
-- `get_project_info` - Get project details
-- **🎯 Task Management (Recommended):**
-  - `sdk_card_tables_create_task` - Create a complete task (card with description and steps) in one operation
-  - `sdk_card_tables_get_enriched` - Get card with comments, creator info, and visual attachments (images)
-- **Steps (Card Table Subtasks):**
-  - `sdk_steps_create` - Create a step within a card
-  - `sdk_steps_update` - Update an existing step
-  - `sdk_steps_complete` - Mark a step as completed/uncompleted
-  - `sdk_steps_reposition` - Change step position within card
-
-#### Usage in IDE
-
-Once configured, you can use natural language in your IDE:
-
-```
-"Can you list my Basecamp projects?"
-"Create a task for implementing user authentication with 3 steps"
-"Add a new task to the Sprint board with description and subtasks"
+  [mcpServers.basecamp.env]
+  BASECAMP_CLIENT_ID = "${env:BASECAMP_CLIENT_ID}"
+  BASECAMP_CLIENT_SECRET = "${env:BASECAMP_CLIENT_SECRET}"
+  BASECAMP_REDIRECT_URI = "${env:BASECAMP_REDIRECT_URI}"
+  BASECAMP_USER_AGENT = "${env:BASECAMP_USER_AGENT}"
 ```
 
-For detailed MCP setup instructions, see [MCP_SETUP.md](MCP_SETUP.md).
+</details>
 
-### Output Files
+<details>
+<summary><strong>Cursor</strong></summary>
 
-The tool creates two files in the `.codex/` directory (or your specified output path):
-
-1. **`tasks.json`** - JSON format for Codex CLI
-2. **`tasks.md`** - Human-readable Markdown format
-
-Example `tasks.json`:
+Create `.cursor/config.json`:
 
 ```json
 {
-  "plan": [
-    {
-      "step": "Implement user authentication",
-      "status": "pending"
-    },
-    {
-      "step": "Add payment processing",
-      "status": "pending"
+  "mcpServers": {
+    "basecamp": {
+      "command": "npx",
+      "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
+      "env": {
+        "BASECAMP_CLIENT_ID": "${env:BASECAMP_CLIENT_ID}",
+        "BASECAMP_CLIENT_SECRET": "${env:BASECAMP_CLIENT_SECRET}",
+        "BASECAMP_REDIRECT_URI": "${env:BASECAMP_REDIRECT_URI}",
+        "BASECAMP_USER_AGENT": "${env:BASECAMP_USER_AGENT}"
+      }
     }
-  ]
+  }
 }
 ```
 
-Example `tasks.md`:
+</details>
 
-```markdown
-# Codex Tasks from Basecamp: My Project
+<details>
+<summary><strong>OpenCode</strong></summary>
 
-- [ ] Implement user authentication
-- [ ] Add payment processing
+Add to `opencode.jsonc` under `mcpServers`:
+
+```jsonc
+{
+  "basecamp": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@aexol-studio/basecamp-to-llm", "mcp"],
+    "environment": {
+      "BASECAMP_CLIENT_ID": "your_client_id",
+      "BASECAMP_CLIENT_SECRET": "your_client_secret",
+      "BASECAMP_REDIRECT_URI": "http://localhost:8787/callback",
+      "BASECAMP_USER_AGENT": "Your App Name (your@email.com)",
+    },
+  },
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Claude Code / Other MCP Clients</strong></summary>
+
+Use stdio transport with the command:
+
+```bash
+npx -y @aexol-studio/basecamp-to-llm mcp
+```
+
+Set the 4 environment variables (`BASECAMP_CLIENT_ID`, `BASECAMP_CLIENT_SECRET`, `BASECAMP_REDIRECT_URI`, `BASECAMP_USER_AGENT`) in your client's MCP config.
+
+</details>
+
+### Available MCP Tools
+
+**Authentication & API**
+
+| Tool           | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `authenticate` | Start OAuth flow (optional `openBrowser`)                 |
+| `api_request`  | Generic API request (method, path, query, body, absolute) |
+
+**Projects**
+
+| Tool                | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `sdk_projects_list` | List projects (optional status filter, pagination) |
+
+**Card Tables (Kanban)**
+
+| Tool                           | Description                                              |
+| ------------------------------ | -------------------------------------------------------- |
+| `sdk_card_tables_get`          | Get card table with columns and cards                    |
+| `sdk_card_tables_get_card`     | Get a single card with basic info                        |
+| `sdk_card_tables_get_enriched` | Get enriched card with comments, attachments, and images |
+| `sdk_card_tables_create_task`  | Create a card with description and checklist steps       |
+| `sdk_card_tables_update_card`  | Update card title, content, due date, or assignees       |
+| `sdk_card_tables_move_card`    | Move a card to a different column                        |
+
+**People & Comments**
+
+| Tool                  | Description                    |
+| --------------------- | ------------------------------ |
+| `sdk_people_list`     | List all people in the account |
+| `sdk_comments_create` | Add a comment to a recording   |
+
+**Steps & Attachments**
+
+| Tool                       | Description                                              |
+| -------------------------- | -------------------------------------------------------- |
+| `sdk_steps_complete`       | Mark a step as completed or uncompleted                  |
+| `sdk_attachments_download` | Download attachment as base64 (supports quality options) |
+
+## CLI Usage
+
+```bash
+# Authenticate with Basecamp (opens browser)
+basecamp-to-llm auth --open
+
+# List available projects
+basecamp-to-llm projects
+
+# Start the MCP server
+basecamp-to-llm mcp
+
+# Call any Basecamp API endpoint
+basecamp-to-llm api GET /projects.json
+basecamp-to-llm api POST /buckets/123/todolists.json -d '{"title":"My List"}'
+
+# List available SDK actions
+basecamp-to-llm sdk list
+
+# Run an SDK action
+basecamp-to-llm sdk run projects.list
+basecamp-to-llm sdk run cardTables.get -a '{"projectId":123,"cardTableId":456}'
 ```
 
 ## Programmatic Usage
 
-You can also use the library programmatically:
-
 ```typescript
-import { BasecampFetcher } from '@aexol-studio/basecamp-to-llm';
-import { BasecampClient, StepsResource, CardTablesResource } from '@aexol-studio/basecamp-to-llm';
+import { BasecampClient, SDK } from '@aexol-studio/basecamp-to-llm';
 
-const fetcher = new BasecampFetcher();
+const client = new BasecampClient();
 
 // List projects
-const projects = await fetcher.listProjects();
-console.log('Available projects:', projects);
+const projects = new SDK.ProjectsResource(client);
+const list = await projects.list();
 
-// Fetch todos
-await fetcher.fetchTodos('My Project Name', {
-  tableName: 'Sprint Board',
-  columnName: 'In Progress',
-  outputPath: './custom-output.json',
-  openBrowser: false,
+// Create a task with steps
+const cards = new SDK.CardTablesResource(client);
+const task = await cards.createCardWithSteps(projectId, columnId, {
+  title: 'Implement auth',
+  content: '<p>OAuth2 support</p>',
+  steps: [{ title: 'Design auth flow' }, { title: 'Implement OAuth2' }, { title: 'Write tests' }],
 });
-
-// 🎯 RECOMMENDED: Create a complete task with description and steps
-const client = new BasecampClient();
-const cardTables = new CardTablesResource(client);
-
-const task = await cardTables.createCardWithSteps(projectId, columnId, {
-  title: 'Implement user authentication',
-  content: `Complete user authentication system with OAuth2 support.
-  
-Requirements:
-- Support email/password login
-- Add OAuth2 providers (Google, GitHub)
-- Implement JWT tokens
-- Add password reset flow`,
-  due_on: '2025-12-31',
-  steps: [
-    { title: 'Design authentication flow', due_on: '2025-12-10' },
-    { title: 'Implement OAuth2 integration', due_on: '2025-12-15' },
-    { title: 'Add JWT token handling', due_on: '2025-12-20' },
-    { title: 'Create password reset flow', due_on: '2025-12-25' },
-    { title: 'Write tests and documentation', due_on: '2025-12-30' },
-  ],
-});
-
-console.log(`Created task: ${task.card.title} with ${task.steps.length} steps`);
-
-// 🎨 Get enriched card with comments and visual context
-const enriched = await cardTables.getEnrichedCard(projectId, cardId);
-
-console.log(`Card: ${enriched.card.title}`);
-console.log(`Comments: ${enriched.comments.length}`);
-console.log(`Images: ${enriched.images.length}`);
-
-// Access image URLs for vision AI analysis
-enriched.images.forEach(img => {
-  console.log(`- ${img.metadata.filename} by ${img.creator}`);
-  console.log(`  Preview: ${img.url}`);
-  if (img.metadata.dimensions) {
-    console.log(`  Size: ${img.metadata.dimensions.width}x${img.metadata.dimensions.height}px`);
-  }
-});
-
-// Work with Steps individually (if needed)
-const steps = new StepsResource(client);
-
-// Create a new step in a card
-const newStep = await steps.create(projectId, cardId, {
-  title: 'Review code',
-  due_on: '2025-12-31',
-  assignees: '123,456', // comma-separated person IDs
-});
-
-// Update a step
-await steps.update(projectId, stepId, {
-  title: 'Review and approve code',
-  due_on: '2026-01-15',
-});
-
-// Mark step as completed
-await steps.complete(projectId, stepId, 'on');
-
-// Mark step as uncompleted
-await steps.complete(projectId, stepId, 'off');
-
-// Reposition a step
-await steps.reposition(projectId, cardId, {
-  source_id: stepId,
-  position: 2, // zero-indexed position
-});
-```
-
-### Enriched Card Context with Visual Attachments
-
-The library can fetch cards with full comment history and extract visual attachments (images) for AI vision analysis:
-
-```typescript
-import { BasecampClient } from '@aexol-studio/basecamp-to-llm';
-import { getEnrichedCard, formatEnrichedCardAsText } from '@aexol-studio/basecamp-to-llm';
-
-const client = new BasecampClient();
-const projectId = 12345;
-const cardId = 67890;
 
 // Get enriched card with comments and images
+import { getEnrichedCard, formatEnrichedCardAsText } from '@aexol-studio/basecamp-to-llm';
+
 const enriched = await getEnrichedCard(client, projectId, cardId);
-
-console.log(`Card: ${enriched.card.title}`);
-console.log(`Project: ${enriched.card.project.name}`);
-console.log(`Steps: ${enriched.card.steps.length}`);
-console.log(`Comments: ${enriched.comments.length}`);
-console.log(`Images: ${enriched.images.length}`);
-
-// Access all images with metadata
-enriched.images.forEach((img, idx) => {
-  console.log(`\nImage ${idx + 1}:`);
-  console.log(`  Filename: ${img.metadata.filename}`);
-  console.log(`  Creator: ${img.creator}`);
-  console.log(`  Size: ${(img.metadata.size / 1024).toFixed(1)}KB`);
-  if (img.metadata.dimensions) {
-    console.log(
-      `  Dimensions: ${img.metadata.dimensions.width}x${img.metadata.dimensions.height}px`
-    );
-  }
-  console.log(`  Preview URL: ${img.url}`);
-});
-
-// Format as readable text for LLM context
 const textContext = formatEnrichedCardAsText(enriched);
-console.log('\n--- Formatted Text Context ---');
-console.log(textContext);
-
-// Use with vision AI models (e.g., GPT-4 Vision, Claude Vision)
-// The image URLs can be passed directly to vision models for analysis
 ```
-
-**Example Output:**
-
-```
-Card: Multi-Company Accounting - Wsparcie wielu firm
-Project: KSIĘGOWOŚĆ
-Steps: 15
-Comments: 1
-Images: 1
-
-Image 1:
-  Filename: screenshot.png
-  Creator: Aleksander Bondar
-  Size: 24.3KB
-  Dimensions: 534x295px
-  Preview URL: https://preview.3.basecamp.com/5657330/blobs/.../previews/full
-```
-
-The enriched context includes:
-
-- **Card details**: title, description, status, creator, project, column
-- **All steps/subtasks**: with completion status, assignees, and due dates
-- **All comments**: with creator info, timestamps, and content
-- **Visual attachments**: extracted images with URLs, metadata, and creator info
-- **Formatted text output**: ready for LLM consumption
-
-This makes it perfect for:
-
-- Providing full context to AI assistants
-- Analyzing screenshots and diagrams in comments
-- Understanding task requirements from visual mockups
-- Generating summaries with visual context
 
 ## Development
 
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
+- npm
 
 ### Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/aexol-studio/basecamp-to-llm.git
 cd basecamp-to-llm
-
-# Install dependencies
 npm install
-
-# Set up environment variables (see Setup section above)
 ```
 
-### Available Scripts
+### Scripts
 
 ```bash
-# Build the project
-npm run build
-
-# Development mode with watch
-npm run dev
-
-# Lint code
-npm run lint
-npm run lint:fix
-
-# Format code
-npm run format
-npm run format:check
-
-# Run tests
-npm test
-npm run test:watch
-
-# Clean build artifacts
-npm run clean
+npm run build          # Compile TypeScript
+npm run dev            # Watch mode
+npm test               # Run tests
+npm run test:watch     # Watch tests
+npm run lint           # ESLint check
+npm run lint:fix       # ESLint autofix
+npm run format         # Prettier format
+npm run format:check   # Prettier check
+npm run clean          # Remove dist/
 ```
 
 ### Project Structure
 
 ```
 src/
-├── cli.ts              # CLI entry point
-├── index.ts            # Main exports
-├── basecamp-fetcher.ts # Core functionality
-└── basecamp-types.ts   # TypeScript type definitions
+├── cli.ts                # CLI entry point
+├── index.ts              # Public exports
+├── auth.ts               # OAuth2 authentication
+├── basecamp-fetcher.ts   # HTTP fetching layer
+├── basecamp-types.ts     # TypeScript type definitions
+├── mcp-server.ts         # MCP server implementation
+└── sdk/
+    ├── index.ts           # SDK exports
+    ├── client.ts          # BasecampClient
+    ├── registry.ts        # Tool registry for MCP
+    ├── types.ts           # SDK type definitions
+    └── resources/
+        ├── cardTables.ts  # Kanban boards and cards
+        ├── comments.ts    # Comments
+        ├── enrichedCards.ts # Enriched card context
+        ├── messages.ts    # Messages
+        ├── people.ts      # People
+        ├── projects.ts    # Projects
+        ├── steps.ts       # Card checklist steps
+        └── todos.ts       # Todos
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE) for details.
 
-## Support
-
-If you encounter any issues or have questions, please [open an issue](https://github.com/aexol-studio/basecamp-to-llm/issues) on GitHub.
-
-## Changelog
-
-### 1.2.0
-
-- **🎯 NEW: `create_task` tool** - Create complete tasks (card with description and steps) in one operation
-- `createCardWithSteps()` helper method for easy task creation with subtasks
-- Description now recommended for all cards
-- Improved AI integration for task management
-- Better support for creating structured tasks with multiple steps
-- Added support for Card Table Steps (subtasks)
-- New StepsResource for creating, updating, completing, and repositioning steps
-- MCP tools for steps management
-- Comprehensive TypeScript types for steps
-
-### 1.0.0
-
-- Initial release
-- OAuth2 authentication
-- Fetch todos from Basecamp projects
-- Export to JSON and Markdown formats
-- CLI interface with Commander.js
+Contributions welcome — [open an issue](https://github.com/aexol-studio/basecamp-to-llm/issues) or submit a PR.

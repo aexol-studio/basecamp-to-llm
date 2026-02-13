@@ -5,18 +5,21 @@ Thank you for your interest in contributing to this project! This document provi
 ## Development Setup
 
 1. **Fork and clone the repository**
+
    ```bash
    git clone https://github.com/your-username/basecamp-to-llm.git
    cd basecamp-to-llm
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
    Create a `.env` file or set the required environment variables:
+
    ```bash
    export BASECAMP_CLIENT_ID="your_client_id"
    export BASECAMP_CLIENT_SECRET="your_client_secret"
@@ -40,12 +43,11 @@ Thank you for your interest in contributing to this project! This document provi
 - `npm test` - Run tests
 - `npm run test:watch` - Run tests in watch mode
 - `npm run clean` - Clean build artifacts
-- `npm run example` - Run TypeScript example
-- `npm run example:js` - Run JavaScript example
 
 ## Code Style
 
 This project uses:
+
 - **TypeScript** for type safety
 - **ESLint** for code linting
 - **Prettier** for code formatting
@@ -62,6 +64,7 @@ Please ensure your code follows the established patterns and passes all linting 
 ## Submitting Changes
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -72,6 +75,7 @@ Please ensure your code follows the established patterns and passes all linting 
    - Update documentation if needed
 
 3. **Run quality checks**
+
    ```bash
    npm run lint
    npm run format:check
@@ -80,6 +84,7 @@ Please ensure your code follows the established patterns and passes all linting 
    ```
 
 4. **Commit your changes**
+
    ```bash
    git add .
    git commit -m "feat: add your feature description"
@@ -113,6 +118,7 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 ## Getting Help
 
 If you need help or have questions:
+
 - Open an issue on GitHub
 - Check existing issues and discussions
 - Review the documentation

@@ -36,7 +36,7 @@ export interface ProjectDockEntry extends Identified, Urls {
 }
 
 export interface Project extends Identified, Timestamped, Urls {
-  status?: 'active' | 'archived' | 'trashed';
+  status?: "active" | "archived" | "trashed";
   name: string;
   description?: string;
   clients_enabled?: boolean;
@@ -45,17 +45,17 @@ export interface Project extends Identified, Timestamped, Urls {
 
 export interface TodoListRef extends Identified, Urls {
   title: string;
-  type: 'Todolist';
+  type: "Todolist";
 }
 
 export interface BucketProjectRef {
   id: number;
   name: string;
-  type: 'Project';
+  type: "Project";
 }
 
 export interface Todo extends Identified, Timestamped, Urls {
-  status?: 'active' | 'archived' | 'trashed';
+  status?: "active" | "archived" | "trashed";
   title?: string;
   content: string;
   description?: string;
@@ -80,13 +80,13 @@ export interface CardTableList extends Identified, Timestamped, Urls {
 
 export interface CardTable extends Identified, Timestamped, Urls {
   title: string;
-  type: 'Kanban::Board';
+  type: "Kanban::Board";
   lists?: CardTableList[];
   bucket?: BucketProjectRef;
 }
 
 export interface Step extends Identified, Timestamped, Urls {
-  status?: 'active' | 'archived' | 'trashed';
+  status?: "active" | "archived" | "trashed";
   title: string;
   completed: boolean;
   due_on?: string | null;
@@ -104,7 +104,7 @@ export interface Step extends Identified, Timestamped, Urls {
 }
 
 export interface Card extends Identified, Timestamped, Urls {
-  status?: 'active' | 'archived' | 'trashed';
+  status?: "active" | "archived" | "trashed";
   title?: string;
   name?: string;
   content?: string;
