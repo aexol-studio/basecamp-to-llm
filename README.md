@@ -41,6 +41,18 @@ npm install @aexol-studio/basecamp-to-llm
 npx @aexol-studio/basecamp-to-llm auth --open
 ```
 
+### Token cache security
+
+OAuth tokens are cached in `.basecamp/basecamp-token.json` under the current working
+directory. Treat this file as sensitive and do not commit it. If your setup has an older
+or root-level token cache such as `.basecamp-token`, ignore that too:
+
+```gitignore
+# Basecamp OAuth token cache
+.basecamp/
+.basecamp-token*
+```
+
 ## MCP Server Setup
 
 Install as a dev dependency in your project:
@@ -197,7 +209,7 @@ basecamp-to-llm sdk run cardTables.get -a '{"projectId":123,"cardTableId":456}'
 ## Programmatic Usage
 
 ```typescript
-import { BasecampClient, SDK } from '@aexol-studio/basecamp-to-llm';
+import { BasecampClient, SDK } from "@aexol-studio/basecamp-to-llm";
 
 const client = new BasecampClient();
 
@@ -208,13 +220,20 @@ const list = await projects.list();
 // Create a task with steps
 const cards = new SDK.CardTablesResource(client);
 const task = await cards.createCardWithSteps(projectId, columnId, {
-  title: 'Implement auth',
-  content: '<p>OAuth2 support</p>',
-  steps: [{ title: 'Design auth flow' }, { title: 'Implement OAuth2' }, { title: 'Write tests' }],
+  title: "Implement auth",
+  content: "<p>OAuth2 support</p>",
+  steps: [
+    { title: "Design auth flow" },
+    { title: "Implement OAuth2" },
+    { title: "Write tests" },
+  ],
 });
 
 // Get enriched card with comments and images
-import { getEnrichedCard, formatEnrichedCardAsText } from '@aexol-studio/basecamp-to-llm';
+import {
+  getEnrichedCard,
+  formatEnrichedCardAsText,
+} from "@aexol-studio/basecamp-to-llm";
 
 const enriched = await getEnrichedCard(client, projectId, cardId);
 const textContext = formatEnrichedCardAsText(enriched);

@@ -98,10 +98,11 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
-# Basecamp token cache
 .codex/
 
-.basecamp
+# Basecamp OAuth token cache (keep .basecamp/basecamp-token.json out of git)
+.basecamp/
+.basecamp-token*
 
 # Basecamp API reference docs (not for npm publish)
 bc3-api/
