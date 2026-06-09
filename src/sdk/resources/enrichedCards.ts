@@ -3,6 +3,7 @@ import type {
   EnrichedCardContext,
   Attachment,
   Comment,
+  BasecampRichTextAttachment,
 } from "../../basecamp-types.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -156,6 +157,224 @@ export function parseAttachments(htmlContent: string): Attachment[] {
   return attachments;
 }
 
+interface CardApiResponse {
+  id: number;
+  title: string;
+  description?: string;
+  content?: string;
+  description_attachments?: BasecampRichTextAttachment[];
+  content_attachments?: BasecampRichTextAttachment[];
+  status: string;
+  created_at: string;
+  updated_at: string;
+  creator: EnrichedCardContext["card"]["creator"];
+  steps?: EnrichedCardContext["card"]["steps"];
+  assignees?: EnrichedCardContext["card"]["assignees"];
+  due_on?: string;
+  bucket: EnrichedCardContext["card"]["project"];
+  parent: {
+    id: number;
+    title: string;
+  };
+}
+
+function firstNonEmpty(
+  ...values: Array<string | undefined>
+): string | undefined {
+  return values.find((value) => value !== undefined && value.length > 0);
+}
+
+function toNumber(value: number | string | undefined): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function toBoolean(value: boolean | string | undefined): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
+}
+
+function filenameFromUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+
+  try {
+    const pathname = new URL(url).pathname;
+    const filename = pathname.split("/").pop();
+    return filename ? decodeURIComponent(filename) : undefined;
+  } catch {
+    const filename = url.split("/").pop();
+    return filename && filename.length > 0 ? filename : undefined;
+  }
+}
+
+function structuredAttachmentKey(
+  attachment: BasecampRichTextAttachment,
+): string | undefined {
+  return firstNonEmpty(
+    attachment.attachable_sgid,
+    attachment.sgid,
+    attachment.download_url,
+    attachment.url,
+    attachment.filename,
+  );
+}
+
+function findHtmlAttachmentIndex(
+  htmlAttachments: Attachment[],
+  structuredAttachment: BasecampRichTextAttachment,
+  usedIndexes: Set<number>,
+): number {
+  const sgid = firstNonEmpty(
+    structuredAttachment.attachable_sgid,
+    structuredAttachment.sgid,
+  );
+
+  return htmlAttachments.findIndex((attachment, index) => {
+    if (usedIndexes.has(index)) return false;
+    if (sgid && attachment.sgid === sgid) return true;
+    return (
+      !!structuredAttachment.filename &&
+      attachment.filename === structuredAttachment.filename &&
+      (!structuredAttachment.content_type ||
+        attachment.contentType === structuredAttachment.content_type)
+    );
+  });
+}
+
+function toAttachment(
+  structuredAttachment: BasecampRichTextAttachment,
+  htmlAttachment?: Attachment,
+): Attachment | undefined {
+  const downloadUrl = firstNonEmpty(
+    structuredAttachment.download_url,
+    htmlAttachment?.downloadUrl,
+    structuredAttachment.url,
+    structuredAttachment.app_url,
+  );
+  const url = firstNonEmpty(
+    structuredAttachment.preview_url,
+    structuredAttachment.thumbnail_url,
+    structuredAttachment.url,
+    htmlAttachment?.url,
+    downloadUrl,
+  );
+
+  if (!downloadUrl || !url) return undefined;
+
+  const filename =
+    firstNonEmpty(
+      structuredAttachment.filename,
+      htmlAttachment?.filename,
+      filenameFromUrl(downloadUrl),
+      filenameFromUrl(url),
+    ) ?? "attachment";
+  const filesize =
+    toNumber(structuredAttachment.filesize) ??
+    toNumber(structuredAttachment.byte_size) ??
+    htmlAttachment?.filesize ??
+    0;
+  const contentType =
+    firstNonEmpty(
+      structuredAttachment.content_type,
+      htmlAttachment?.contentType,
+    ) ?? "application/octet-stream";
+  const attachment: Attachment = {
+    sgid:
+      firstNonEmpty(
+        structuredAttachment.attachable_sgid,
+        structuredAttachment.sgid,
+        htmlAttachment?.sgid,
+      ) ?? filename,
+    contentType,
+    url,
+    downloadUrl,
+    filename,
+    filesize,
+    previewable:
+      toBoolean(structuredAttachment.previewable) ??
+      htmlAttachment?.previewable ??
+      !!firstNonEmpty(
+        structuredAttachment.preview_url,
+        structuredAttachment.thumbnail_url,
+      ),
+  };
+
+  const width = toNumber(structuredAttachment.width) ?? htmlAttachment?.width;
+  const height =
+    toNumber(structuredAttachment.height) ?? htmlAttachment?.height;
+  if (width !== undefined && height !== undefined) {
+    attachment.width = width;
+    attachment.height = height;
+  }
+
+  if (htmlAttachment?.presentation) {
+    attachment.presentation = htmlAttachment.presentation;
+  }
+
+  return attachment;
+}
+
+function collectStructuredAttachments(
+  ...attachmentGroups: Array<BasecampRichTextAttachment[] | undefined>
+): BasecampRichTextAttachment[] {
+  const attachments: BasecampRichTextAttachment[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const group of attachmentGroups) {
+    if (!group) continue;
+
+    for (const attachment of group) {
+      const key = structuredAttachmentKey(attachment);
+      if (key) {
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+      }
+      attachments.push(attachment);
+    }
+  }
+
+  return attachments;
+}
+
+function parseRichTextAttachments(
+  htmlContent: string,
+  structuredAttachments: BasecampRichTextAttachment[] = [],
+): Attachment[] {
+  const htmlAttachments = parseAttachments(htmlContent);
+  if (structuredAttachments.length === 0) return htmlAttachments;
+
+  const usedHtmlIndexes = new Set<number>();
+  const mergedAttachments: Attachment[] = [];
+
+  for (const structuredAttachment of structuredAttachments) {
+    const htmlIndex = findHtmlAttachmentIndex(
+      htmlAttachments,
+      structuredAttachment,
+      usedHtmlIndexes,
+    );
+    const htmlAttachment =
+      htmlIndex >= 0 ? htmlAttachments[htmlIndex] : undefined;
+    const attachment = toAttachment(structuredAttachment, htmlAttachment);
+
+    if (attachment) {
+      mergedAttachments.push(attachment);
+      if (htmlIndex >= 0) usedHtmlIndexes.add(htmlIndex);
+    }
+  }
+
+  htmlAttachments.forEach((attachment, index) => {
+    if (!usedHtmlIndexes.has(index)) mergedAttachments.push(attachment);
+  });
+
+  return mergedAttachments;
+}
+
 /**
  * Get enriched card context with comments and visual attachments
  * @param downloadImages - Whether to download images as base64 (default: false)
@@ -171,7 +390,7 @@ export async function getEnrichedCard(
     "GET",
     `/buckets/${projectId}/card_tables/cards/${cardId}.json`,
   );
-  const card = cardResponse as any;
+  const card = cardResponse as CardApiResponse;
 
   // Fetch all comments (with pagination support)
   const comments = await client.getAllPages<Comment>(
@@ -180,11 +399,20 @@ export async function getEnrichedCard(
 
   // Parse attachments from card description
   const cardDescription = card.description || card.content || "";
-  const cardAttachments = parseAttachments(cardDescription);
+  const cardAttachments = parseRichTextAttachments(
+    cardDescription,
+    collectStructuredAttachments(
+      card.description_attachments,
+      card.content_attachments,
+    ),
+  );
 
   // Parse comments and extract attachments
   const enrichedComments = comments.map((comment) => {
-    const attachments = parseAttachments(comment.content);
+    const attachments = parseRichTextAttachments(
+      comment.content,
+      comment.content_attachments,
+    );
     return {
       id: comment.id,
       creator: comment.creator,
@@ -272,28 +500,33 @@ export async function getEnrichedCard(
     ...commentImagePromises,
   ]);
 
+  const cardContext: EnrichedCardContext["card"] = {
+    id: card.id,
+    title: card.title,
+    description: cardDescription,
+    status: card.status,
+    created_at: card.created_at,
+    updated_at: card.updated_at,
+    creator: card.creator,
+    steps: card.steps || [],
+    assignees: card.assignees || [],
+    project: {
+      id: card.bucket.id,
+      name: card.bucket.name,
+    },
+    column: {
+      id: card.parent.id,
+      name: card.parent.title,
+    },
+  };
+
+  if (card.due_on) {
+    cardContext.due_on = card.due_on;
+  }
+
   // Build enriched context
   const enrichedContext: EnrichedCardContext = {
-    card: {
-      id: card.id,
-      title: card.title,
-      description: card.description || card.content || "",
-      status: card.status,
-      created_at: card.created_at,
-      updated_at: card.updated_at,
-      creator: card.creator,
-      steps: card.steps || [],
-      assignees: card.assignees || [],
-      due_on: card.due_on,
-      project: {
-        id: card.bucket.id,
-        name: card.bucket.name,
-      },
-      column: {
-        id: card.parent.id,
-        name: card.parent.title,
-      },
-    },
+    card: cardContext,
     comments: enrichedComments,
     images,
   };

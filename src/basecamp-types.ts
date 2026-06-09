@@ -142,6 +142,25 @@ export interface Comment {
   bucket: Bucket;
   creator: Creator;
   content: string;
+  content_attachments?: BasecampRichTextAttachment[];
+}
+
+// Rich text attachment entries returned alongside Basecamp HTML fields
+export interface BasecampRichTextAttachment {
+  attachable_sgid?: string;
+  sgid?: string;
+  content_type?: string;
+  url?: string;
+  app_url?: string;
+  download_url?: string;
+  preview_url?: string;
+  thumbnail_url?: string;
+  filename?: string;
+  filesize?: number | string;
+  byte_size?: number | string;
+  width?: number | string;
+  height?: number | string;
+  previewable?: boolean | string;
 }
 
 // Attachment Types (extracted from comment content)

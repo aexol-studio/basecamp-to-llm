@@ -2,8 +2,37 @@ import {
   parseAttachments,
   formatEnrichedCardAsText,
   downloadAttachment,
+  getEnrichedCard,
 } from "../sdk/resources/enrichedCards";
-import type { EnrichedCardContext } from "../basecamp-types";
+import type { BasecampClient } from "../sdk/client";
+import type { Comment, Creator, EnrichedCardContext } from "../basecamp-types";
+
+function mockCreator(id: number, name: string): Creator {
+  return {
+    id,
+    attachable_sgid: `person-${id}`,
+    name,
+    email_address: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+    personable_type: "User",
+    title: "",
+    bio: "",
+    location: "",
+    created_at: "2025-11-20T10:00:00Z",
+    updated_at: "2025-11-20T10:00:00Z",
+    admin: false,
+    owner: false,
+    client: false,
+    employee: true,
+    time_zone: "UTC",
+    avatar_url: "",
+    company: { id: 1, name: "Example" },
+    can_ping: true,
+    can_manage_projects: false,
+    can_manage_people: false,
+    can_access_timesheet: false,
+    can_access_hill_charts: false,
+  };
+}
 
 describe("Enriched Cards", () => {
   describe("parseAttachments", () => {
@@ -109,6 +138,110 @@ describe("Enriched Cards", () => {
 
       expect(result.filename).toBe("attachment");
       expect(result.mimeType).toBe("application/octet-stream");
+    });
+  });
+
+  describe("getEnrichedCard", () => {
+    it("should prefer structured attachment download_url over storage.app HTML hrefs", async () => {
+      const apiDownloadUrl =
+        "https://3.basecampapi.com/12345/blobs/abc123/download/spec.pdf";
+      const storageAppDownloadUrl =
+        "https://storage.app.basecamp.com/12345/blobs/abc123/download/spec.pdf";
+      const cardImageApiDownloadUrl =
+        "https://3.basecampapi.com/12345/blobs/cardimage/download/card.png";
+      const cardImageStorageUrl =
+        "https://storage.app.basecamp.com/12345/blobs/cardimage/download/card.png";
+      const cardDescription = `<div><bc-attachment sgid="card-image-sgid" content-type="image/png" url="https://preview.3.basecamp.com/12345/blobs/cardimage/previews/card" href="${cardImageStorageUrl}" filename="card.png" filesize="4096" width="640" height="480" previewable="true" presentation="gallery"></bc-attachment></div>`;
+      const commentContent = `<div><bc-attachment sgid="pdf-sgid" content-type="application/pdf" url="https://preview.3.basecamp.com/12345/blobs/abc123/previews/card" href="${storageAppDownloadUrl}" filename="spec.pdf" filesize="2048" previewable="false"></bc-attachment></div>`;
+      const comment: Comment = {
+        id: 987,
+        status: "active",
+        visible_to_clients: false,
+        created_at: "2025-11-20T12:00:00Z",
+        updated_at: "2025-11-20T12:00:00Z",
+        title: "Comment",
+        inherits_status: true,
+        type: "Comment",
+        url: "https://3.basecampapi.com/12345/recordings/987.json",
+        app_url: "https://3.basecamp.com/12345/buckets/1/comments/987",
+        bookmark_url: "https://3.basecamp.com/12345/bookmarks/987",
+        parent: {
+          id: 456,
+          title: "Card",
+          type: "Kanban::Card",
+          url: "https://3.basecampapi.com/12345/card_tables/cards/456.json",
+          app_url:
+            "https://3.basecamp.com/12345/buckets/1/card_tables/cards/456",
+        },
+        bucket: { id: 12345, name: "Project", type: "Project" },
+        creator: mockCreator(2, "Alice Example"),
+        content: commentContent,
+        content_attachments: [
+          {
+            attachable_sgid: "pdf-sgid",
+            content_type: "application/pdf",
+            preview_url:
+              "https://preview.3.basecamp.com/12345/blobs/abc123/previews/card",
+            download_url: apiDownloadUrl,
+            filename: "spec.pdf",
+            byte_size: 2048,
+            previewable: false,
+          },
+        ],
+      };
+      const card = {
+        id: 456,
+        title: "Card",
+        description: cardDescription,
+        description_attachments: [
+          {
+            attachable_sgid: "card-image-sgid",
+            content_type: "image/png",
+            preview_url:
+              "https://preview.3.basecamp.com/12345/blobs/cardimage/previews/card",
+            download_url: cardImageApiDownloadUrl,
+            filename: "card.png",
+            byte_size: 4096,
+            width: 640,
+            height: 480,
+            previewable: true,
+          },
+        ],
+        status: "active",
+        created_at: "2025-11-20T10:00:00Z",
+        updated_at: "2025-11-20T11:00:00Z",
+        creator: mockCreator(1, "Card Creator"),
+        steps: [],
+        assignees: [],
+        bucket: { id: 12345, name: "Project" },
+        parent: { id: 10, title: "Column" },
+      };
+      const mockClient = {
+        request: jest.fn().mockResolvedValue(card),
+        getAllPages: jest.fn().mockResolvedValue([comment]),
+        downloadBinary: jest.fn(),
+      };
+
+      const enriched = await getEnrichedCard(
+        mockClient as unknown as BasecampClient,
+        12345,
+        456,
+      );
+
+      const commentAttachment = enriched.comments[0]?.attachments[0];
+      if (!commentAttachment) throw new Error("Expected comment attachment");
+
+      expect(commentAttachment).toMatchObject({
+        sgid: "pdf-sgid",
+        contentType: "application/pdf",
+        downloadUrl: apiDownloadUrl,
+        filename: "spec.pdf",
+        filesize: 2048,
+        previewable: false,
+      });
+      expect(commentAttachment.downloadUrl).not.toBe(storageAppDownloadUrl);
+      expect(enriched.images[0]?.downloadUrl).toBe(cardImageApiDownloadUrl);
+      expect(enriched.images[0]?.downloadUrl).not.toBe(cardImageStorageUrl);
     });
   });
 

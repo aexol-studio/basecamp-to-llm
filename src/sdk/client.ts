@@ -173,24 +173,26 @@ export class BasecampClient {
 
   /**
    * Convert Basecamp storage/preview URLs to API URLs that work with OAuth tokens
-   * storage.3.basecamp.com and preview.3.basecamp.com URLs return 404 with OAuth
-   * but the same paths work on 3.basecampapi.com
+   * storage/preview URLs return 404 with OAuth, but the same paths work on
+   * 3.basecampapi.com.
    */
   private convertToApiUrl(url: string): string {
-    // Convert storage.3.basecamp.com -> 3.basecampapi.com
-    if (url.includes("storage.3.basecamp.com")) {
-      return url.replace(
-        "https://storage.3.basecamp.com",
-        "https://3.basecampapi.com",
-      );
+    const convertibleHosts = new Set([
+      "storage.3.basecamp.com",
+      "preview.3.basecamp.com",
+      "storage.app.basecamp.com",
+    ]);
+
+    try {
+      const parsedUrl = new URL(url);
+      if (convertibleHosts.has(parsedUrl.hostname)) {
+        parsedUrl.hostname = "3.basecampapi.com";
+        return parsedUrl.toString();
+      }
+    } catch {
+      return url;
     }
-    // Convert preview.3.basecamp.com -> 3.basecampapi.com
-    if (url.includes("preview.3.basecamp.com")) {
-      return url.replace(
-        "https://preview.3.basecamp.com",
-        "https://3.basecampapi.com",
-      );
-    }
+
     return url;
   }
 
