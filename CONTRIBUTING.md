@@ -18,13 +18,15 @@ Thank you for your interest in contributing to this project! This document provi
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file or set the required environment variables:
+   Export the required variables in the shell that runs the CLI or configure them in your MCP client. The package does not load `.env` files automatically.
 
    ```bash
    export BASECAMP_CLIENT_ID="your_client_id"
    export BASECAMP_CLIENT_SECRET="your_client_secret"
    export BASECAMP_REDIRECT_URI="http://localhost:8787/callback"
    export BASECAMP_USER_AGENT="Your App Name (your@email.com)"
+   # Optional: select an account when the authorization has multiple Basecamp accounts
+   export BASECAMP_ACCOUNT_ID="your_account_id"
    ```
 
 4. **Build the project**

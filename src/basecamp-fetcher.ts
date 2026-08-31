@@ -1,4 +1,4 @@
-import { BasecampAuth } from "./auth.js";
+import { BasecampAuth } from './auth.js';
 
 export interface Project {
   id: number;
@@ -18,9 +18,9 @@ export interface ProjectDetails extends Project {
 }
 
 export class BasecampFetcher {
-  private readonly USER_AGENT = process.env["BASECAMP_USER_AGENT"];
+  private readonly USER_AGENT = process.env['BASECAMP_USER_AGENT'];
 
-  private readonly API_BASE = "https://3.basecampapi.com";
+  private readonly API_BASE = 'https://3.basecampapi.com';
 
   private readonly auth: BasecampAuth;
 
@@ -31,7 +31,7 @@ export class BasecampFetcher {
 
   private validateEnvironment(): void {
     if (!this.USER_AGENT) {
-      throw new Error("Missing env BASECAMP_USER_AGENT");
+      throw new Error('Missing env BASECAMP_USER_AGENT');
     }
   }
 
@@ -39,12 +39,12 @@ export class BasecampFetcher {
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "User-Agent": this.USER_AGENT || "Salonova (contact@example.com)",
-        Accept: "application/json",
+        'User-Agent': this.USER_AGENT || 'Salonova (contact@example.com)',
+        Accept: 'application/json',
       },
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
+      const text = await res.text().catch(() => '');
       throw new Error(`HTTP ${res.status} for ${url}: ${text}`);
     }
     return (await res.json()) as T;
@@ -60,7 +60,7 @@ export class BasecampFetcher {
 
     const activeProjects = await this.api<Project[]>(
       `${this.API_BASE}/${accountId}/projects.json`,
-      token.access_token,
+      token.access_token
     );
     return activeProjects;
   }

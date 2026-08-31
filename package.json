@@ -1,7 +1,8 @@
 {
   "name": "@aexol-studio/basecamp-to-llm",
   "version": "1.4.1",
-  "description": "CLI tool to fetch Basecamp todos and convert them to LLM-friendly task formats",
+  "description": "Basecamp MCP server, CLI, and typed TypeScript SDK for LLM-friendly project data",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -18,6 +19,8 @@
     "clean": "rimraf dist",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "prepublishOnly": "npm run clean && npm run build",
@@ -25,7 +28,10 @@
   },
   "keywords": [
     "basecamp",
+    "mcp",
+    "model-context-protocol",
     "cli",
+    "sdk",
     "todos",
     "tasks",
     "llm",
@@ -43,7 +49,7 @@
   },
   "homepage": "https://github.com/aexol-studio/basecamp-to-llm#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

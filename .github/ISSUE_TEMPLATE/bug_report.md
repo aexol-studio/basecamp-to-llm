@@ -21,8 +21,8 @@ A clear and concise description of what you expected to happen.
 **Environment:**
 
 - OS: [e.g. macOS, Windows, Linux]
-- Node.js version: [e.g. 18.0.0]
-- Package version: [e.g. 1.3.x]
+- Node.js version: [e.g. 20.0.0 or 22.0.0]
+- Package version: [e.g. 1.4.1]
 
 **Additional context**
 Add any other context about the problem here, including:

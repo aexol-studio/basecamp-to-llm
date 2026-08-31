@@ -209,7 +209,7 @@ export interface EnrichedCardContext {
   images: Array<{
     url: string;
     downloadUrl?: string; // Direct download URL for authenticated download
-    source: "card" | "comment";
+    source: 'card' | 'comment';
     sourceId: number;
     creator: string;
     metadata: {

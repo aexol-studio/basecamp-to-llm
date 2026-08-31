@@ -1,14 +1,14 @@
-import type { BasecampClient } from "../client.js";
+import type { BasecampClient } from '../client.js';
 import type {
   EnrichedCardContext,
   Attachment,
   Comment,
   BasecampRichTextAttachment,
-} from "../../basecamp-types.js";
-import fs from "node:fs";
-import path from "node:path";
+} from '../../basecamp-types.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
-export type ImageQuality = "full" | "preview" | "thumbnail";
+export type ImageQuality = 'full' | 'preview' | 'thumbnail';
 
 /**
  * Select the appropriate image URL based on the requested quality level.
@@ -18,17 +18,17 @@ export type ImageQuality = "full" | "preview" | "thumbnail";
  */
 function getImageUrl(att: Attachment, quality: ImageQuality): string {
   switch (quality) {
-    case "full":
+    case 'full':
       return att.downloadUrl;
-    case "thumbnail":
+    case 'thumbnail':
       // Try to construct thumbnail URL from download URL
       // Pattern: .../blobs/{key}/download/{filename} → .../blobs/{key}/previews/card
-      if (att.downloadUrl.includes("/download/")) {
-        return att.downloadUrl.replace(/\/download\/[^/]+$/, "/previews/card");
+      if (att.downloadUrl.includes('/download/')) {
+        return att.downloadUrl.replace(/\/download\/[^/]+$/, '/previews/card');
       }
       // Fallback to preview
       return att.url;
-    case "preview":
+    case 'preview':
     default:
       return att.url;
   }
@@ -37,10 +37,7 @@ function getImageUrl(att: Attachment, quality: ImageQuality): string {
 /**
  * Download image from URL using authenticated client and return base64 data
  */
-async function downloadImageAsBase64(
-  client: BasecampClient,
-  url: string,
-): Promise<string> {
+async function downloadImageAsBase64(client: BasecampClient, url: string): Promise<string> {
   return await client.downloadBinary(url);
 }
 
@@ -64,32 +61,29 @@ export async function downloadAttachment(
   client: BasecampClient,
   url: string,
   filename?: string,
-  mimeType?: string,
+  mimeType?: string
 ): Promise<DownloadedAttachment> {
   const base64 = await client.downloadBinary(url);
 
   // Estimate size from base64 (rough approximation)
   const size = Math.ceil((base64.length * 3) / 4);
 
-  const safeFilename = (filename || "attachment").replace(
-    /[^a-zA-Z0-9._-]/g,
-    "_",
-  );
+  const safeFilename = (filename || 'attachment').replace(/[^a-zA-Z0-9._-]/g, '_');
 
   // Always save to .basecamp/images/ for backup/reference
-  const basecampDir = path.join(process.cwd(), ".basecamp", "images");
+  const basecampDir = path.join(process.cwd(), '.basecamp', 'images');
   if (!fs.existsSync(basecampDir)) {
     fs.mkdirSync(basecampDir, { recursive: true });
   }
 
   const filePath = path.join(basecampDir, safeFilename);
-  const buffer = Buffer.from(base64, "base64");
+  const buffer = Buffer.from(base64, 'base64');
   fs.writeFileSync(filePath, buffer);
 
   // Return both: base64 for image content block + savedPath for reference
   return {
     filename: safeFilename,
-    mimeType: mimeType || "application/octet-stream",
+    mimeType: mimeType || 'application/octet-stream',
     size,
     base64,
     savedPath: filePath,
@@ -138,7 +132,7 @@ export function parseAttachments(htmlContent: string): Attachment[] {
         downloadUrl: hrefMatch[1],
         filename: filenameMatch[1],
         filesize: parseInt(filesizeMatch[1], 10),
-        previewable: previewableMatch ? previewableMatch[1] === "true" : false,
+        previewable: previewableMatch ? previewableMatch[1] === 'true' : false,
       };
 
       if (widthMatch?.[1] && heightMatch?.[1]) {
@@ -167,26 +161,24 @@ interface CardApiResponse {
   status: string;
   created_at: string;
   updated_at: string;
-  creator: EnrichedCardContext["card"]["creator"];
-  steps?: EnrichedCardContext["card"]["steps"];
-  assignees?: EnrichedCardContext["card"]["assignees"];
+  creator: EnrichedCardContext['card']['creator'];
+  steps?: EnrichedCardContext['card']['steps'];
+  assignees?: EnrichedCardContext['card']['assignees'];
   due_on?: string;
-  bucket: EnrichedCardContext["card"]["project"];
+  bucket: EnrichedCardContext['card']['project'];
   parent: {
     id: number;
     title: string;
   };
 }
 
-function firstNonEmpty(
-  ...values: Array<string | undefined>
-): string | undefined {
-  return values.find((value) => value !== undefined && value.length > 0);
+function firstNonEmpty(...values: Array<string | undefined>): string | undefined {
+  return values.find(value => value !== undefined && value.length > 0);
 }
 
 function toNumber(value: number | string | undefined): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.length > 0) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.length > 0) {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
@@ -194,9 +186,9 @@ function toNumber(value: number | string | undefined): number | undefined {
 }
 
 function toBoolean(value: boolean | string | undefined): boolean | undefined {
-  if (typeof value === "boolean") return value;
-  if (value === "true") return true;
-  if (value === "false") return false;
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
   return undefined;
 }
 
@@ -205,35 +197,30 @@ function filenameFromUrl(url: string | undefined): string | undefined {
 
   try {
     const pathname = new URL(url).pathname;
-    const filename = pathname.split("/").pop();
+    const filename = pathname.split('/').pop();
     return filename ? decodeURIComponent(filename) : undefined;
   } catch {
-    const filename = url.split("/").pop();
+    const filename = url.split('/').pop();
     return filename && filename.length > 0 ? filename : undefined;
   }
 }
 
-function structuredAttachmentKey(
-  attachment: BasecampRichTextAttachment,
-): string | undefined {
+function structuredAttachmentKey(attachment: BasecampRichTextAttachment): string | undefined {
   return firstNonEmpty(
     attachment.attachable_sgid,
     attachment.sgid,
     attachment.download_url,
     attachment.url,
-    attachment.filename,
+    attachment.filename
   );
 }
 
 function findHtmlAttachmentIndex(
   htmlAttachments: Attachment[],
   structuredAttachment: BasecampRichTextAttachment,
-  usedIndexes: Set<number>,
+  usedIndexes: Set<number>
 ): number {
-  const sgid = firstNonEmpty(
-    structuredAttachment.attachable_sgid,
-    structuredAttachment.sgid,
-  );
+  const sgid = firstNonEmpty(structuredAttachment.attachable_sgid, structuredAttachment.sgid);
 
   return htmlAttachments.findIndex((attachment, index) => {
     if (usedIndexes.has(index)) return false;
@@ -249,20 +236,20 @@ function findHtmlAttachmentIndex(
 
 function toAttachment(
   structuredAttachment: BasecampRichTextAttachment,
-  htmlAttachment?: Attachment,
+  htmlAttachment?: Attachment
 ): Attachment | undefined {
   const downloadUrl = firstNonEmpty(
     structuredAttachment.download_url,
     htmlAttachment?.downloadUrl,
     structuredAttachment.url,
-    structuredAttachment.app_url,
+    structuredAttachment.app_url
   );
   const url = firstNonEmpty(
     structuredAttachment.preview_url,
     structuredAttachment.thumbnail_url,
     structuredAttachment.url,
     htmlAttachment?.url,
-    downloadUrl,
+    downloadUrl
   );
 
   if (!downloadUrl || !url) return undefined;
@@ -272,24 +259,22 @@ function toAttachment(
       structuredAttachment.filename,
       htmlAttachment?.filename,
       filenameFromUrl(downloadUrl),
-      filenameFromUrl(url),
-    ) ?? "attachment";
+      filenameFromUrl(url)
+    ) ?? 'attachment';
   const filesize =
     toNumber(structuredAttachment.filesize) ??
     toNumber(structuredAttachment.byte_size) ??
     htmlAttachment?.filesize ??
     0;
   const contentType =
-    firstNonEmpty(
-      structuredAttachment.content_type,
-      htmlAttachment?.contentType,
-    ) ?? "application/octet-stream";
+    firstNonEmpty(structuredAttachment.content_type, htmlAttachment?.contentType) ??
+    'application/octet-stream';
   const attachment: Attachment = {
     sgid:
       firstNonEmpty(
         structuredAttachment.attachable_sgid,
         structuredAttachment.sgid,
-        htmlAttachment?.sgid,
+        htmlAttachment?.sgid
       ) ?? filename,
     contentType,
     url,
@@ -299,15 +284,11 @@ function toAttachment(
     previewable:
       toBoolean(structuredAttachment.previewable) ??
       htmlAttachment?.previewable ??
-      !!firstNonEmpty(
-        structuredAttachment.preview_url,
-        structuredAttachment.thumbnail_url,
-      ),
+      !!firstNonEmpty(structuredAttachment.preview_url, structuredAttachment.thumbnail_url),
   };
 
   const width = toNumber(structuredAttachment.width) ?? htmlAttachment?.width;
-  const height =
-    toNumber(structuredAttachment.height) ?? htmlAttachment?.height;
+  const height = toNumber(structuredAttachment.height) ?? htmlAttachment?.height;
   if (width !== undefined && height !== undefined) {
     attachment.width = width;
     attachment.height = height;
@@ -344,7 +325,7 @@ function collectStructuredAttachments(
 
 function parseRichTextAttachments(
   htmlContent: string,
-  structuredAttachments: BasecampRichTextAttachment[] = [],
+  structuredAttachments: BasecampRichTextAttachment[] = []
 ): Attachment[] {
   const htmlAttachments = parseAttachments(htmlContent);
   if (structuredAttachments.length === 0) return htmlAttachments;
@@ -356,10 +337,9 @@ function parseRichTextAttachments(
     const htmlIndex = findHtmlAttachmentIndex(
       htmlAttachments,
       structuredAttachment,
-      usedHtmlIndexes,
+      usedHtmlIndexes
     );
-    const htmlAttachment =
-      htmlIndex >= 0 ? htmlAttachments[htmlIndex] : undefined;
+    const htmlAttachment = htmlIndex >= 0 ? htmlAttachments[htmlIndex] : undefined;
     const attachment = toAttachment(structuredAttachment, htmlAttachment);
 
     if (attachment) {
@@ -383,36 +363,30 @@ export async function getEnrichedCard(
   client: BasecampClient,
   projectId: number,
   cardId: number,
-  options: { downloadImages?: boolean; imageQuality?: ImageQuality } = {},
+  options: { downloadImages?: boolean; imageQuality?: ImageQuality } = {}
 ): Promise<EnrichedCardContext> {
   // Fetch card details
   const cardResponse = await client.request(
-    "GET",
-    `/buckets/${projectId}/card_tables/cards/${cardId}.json`,
+    'GET',
+    `/buckets/${projectId}/card_tables/cards/${cardId}.json`
   );
   const card = cardResponse as CardApiResponse;
 
   // Fetch all comments (with pagination support)
   const comments = await client.getAllPages<Comment>(
-    `/buckets/${projectId}/recordings/${cardId}/comments.json`,
+    `/buckets/${projectId}/recordings/${cardId}/comments.json`
   );
 
   // Parse attachments from card description
-  const cardDescription = card.description || card.content || "";
+  const cardDescription = card.description || card.content || '';
   const cardAttachments = parseRichTextAttachments(
     cardDescription,
-    collectStructuredAttachments(
-      card.description_attachments,
-      card.content_attachments,
-    ),
+    collectStructuredAttachments(card.description_attachments, card.content_attachments)
   );
 
   // Parse comments and extract attachments
-  const enrichedComments = comments.map((comment) => {
-    const attachments = parseRichTextAttachments(
-      comment.content,
-      comment.content_attachments,
-    );
+  const enrichedComments = comments.map(comment => {
+    const attachments = parseRichTextAttachments(comment.content, comment.content_attachments);
     return {
       id: comment.id,
       creator: comment.creator,
@@ -424,11 +398,11 @@ export async function getEnrichedCard(
 
   // Extract images from card description
   const cardImagePromises = cardAttachments
-    .filter((att) => att.contentType.startsWith("image/"))
-    .map(async (att) => {
-      const img: EnrichedCardContext["images"][0] = {
+    .filter(att => att.contentType.startsWith('image/'))
+    .map(async att => {
+      const img: EnrichedCardContext['images'][0] = {
         url: att.url,
-        source: "card" as const,
+        source: 'card' as const,
         sourceId: card.id,
         creator: card.creator.name,
         metadata: {
@@ -446,7 +420,7 @@ export async function getEnrichedCard(
       // Download image if requested
       if (options.downloadImages) {
         try {
-          const imageUrl = getImageUrl(att, options.imageQuality ?? "preview");
+          const imageUrl = getImageUrl(att, options.imageQuality ?? 'preview');
           img.base64 = await downloadImageAsBase64(client, imageUrl);
         } catch (error) {
           console.error(`Failed to download image ${att.filename}:`, error);
@@ -457,13 +431,13 @@ export async function getEnrichedCard(
     });
 
   // Extract all images from comments
-  const commentImagePromises = enrichedComments.flatMap((comment) =>
+  const commentImagePromises = enrichedComments.flatMap(comment =>
     comment.attachments
-      .filter((att) => att.contentType.startsWith("image/"))
-      .map(async (att) => {
-        const img: EnrichedCardContext["images"][0] = {
+      .filter(att => att.contentType.startsWith('image/'))
+      .map(async att => {
+        const img: EnrichedCardContext['images'][0] = {
           url: att.url,
-          source: "comment" as const,
+          source: 'comment' as const,
           sourceId: comment.id,
           creator: comment.creator.name,
           metadata: {
@@ -481,10 +455,7 @@ export async function getEnrichedCard(
         // Download image if requested
         if (options.downloadImages) {
           try {
-            const imageUrl = getImageUrl(
-              att,
-              options.imageQuality ?? "preview",
-            );
+            const imageUrl = getImageUrl(att, options.imageQuality ?? 'preview');
             img.base64 = await downloadImageAsBase64(client, imageUrl);
           } catch (error) {
             console.error(`Failed to download image ${att.filename}:`, error);
@@ -492,15 +463,12 @@ export async function getEnrichedCard(
         }
 
         return img;
-      }),
+      })
   );
 
-  const images = await Promise.all([
-    ...cardImagePromises,
-    ...commentImagePromises,
-  ]);
+  const images = await Promise.all([...cardImagePromises, ...commentImagePromises]);
 
-  const cardContext: EnrichedCardContext["card"] = {
+  const cardContext: EnrichedCardContext['card'] = {
     id: card.id,
     title: card.title,
     description: cardDescription,
@@ -538,7 +506,7 @@ export async function getEnrichedCard(
  * Format enriched card context for LLM consumption (text-only)
  */
 export function formatEnrichedCardAsText(context: EnrichedCardContext): string {
-  let output = "";
+  let output = '';
 
   // Card header
   output += `# Card: ${context.card.title}\n\n`;
@@ -557,16 +525,16 @@ export function formatEnrichedCardAsText(context: EnrichedCardContext): string {
   if (context.card.steps.length > 0) {
     output += `## Steps (${context.card.steps.length})\n\n`;
     context.card.steps.forEach((step, idx) => {
-      const status = step.completed ? "✅" : "⬜";
+      const status = step.completed ? '✅' : '⬜';
       output += `${idx + 1}. ${status} ${step.title}\n`;
       if (step.assignees && step.assignees.length > 0) {
-        output += `   Assigned to: ${step.assignees.map((a) => a.name).join(", ")}\n`;
+        output += `   Assigned to: ${step.assignees.map(a => a.name).join(', ')}\n`;
       }
       if (step.due_on) {
         output += `   Due: ${step.due_on}\n`;
       }
     });
-    output += "\n";
+    output += '\n';
   }
 
   // Comments
@@ -577,7 +545,7 @@ export function formatEnrichedCardAsText(context: EnrichedCardContext): string {
       output += `**Posted:** ${comment.created_at}\n\n`;
 
       // Strip HTML tags for text-only content
-      const textContent = comment.content.replace(/<[^>]*>/g, "").trim();
+      const textContent = comment.content.replace(/<[^>]*>/g, '').trim();
       if (textContent) {
         output += `${textContent}\n\n`;
       }
@@ -585,7 +553,7 @@ export function formatEnrichedCardAsText(context: EnrichedCardContext): string {
       // List attachments
       if (comment.attachments.length > 0) {
         output += `**Attachments (${comment.attachments.length}):**\n`;
-        comment.attachments.forEach((att) => {
+        comment.attachments.forEach(att => {
           output += `- ${att.filename} (${att.contentType}, ${(att.filesize / 1024).toFixed(1)}KB)\n`;
           if (att.width && att.height) {
             output += `  Size: ${att.width}x${att.height}px\n`;
@@ -593,7 +561,7 @@ export function formatEnrichedCardAsText(context: EnrichedCardContext): string {
           output += `  Preview: ${att.url}\n`;
           output += `  Download: ${att.downloadUrl}\n`;
         });
-        output += "\n";
+        output += '\n';
       }
     });
   }

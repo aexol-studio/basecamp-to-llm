@@ -36,7 +36,7 @@ export interface ProjectDockEntry extends Identified, Urls {
 }
 
 export interface Project extends Identified, Timestamped, Urls {
-  status?: "active" | "archived" | "trashed";
+  status?: 'active' | 'archived' | 'trashed';
   name: string;
   description?: string;
   clients_enabled?: boolean;
@@ -45,17 +45,17 @@ export interface Project extends Identified, Timestamped, Urls {
 
 export interface TodoListRef extends Identified, Urls {
   title: string;
-  type: "Todolist";
+  type: 'Todolist';
 }
 
 export interface BucketProjectRef {
   id: number;
   name: string;
-  type: "Project";
+  type: 'Project';
 }
 
 export interface Todo extends Identified, Timestamped, Urls {
-  status?: "active" | "archived" | "trashed";
+  status?: 'active' | 'archived' | 'trashed';
   title?: string;
   content: string;
   description?: string;
@@ -80,13 +80,13 @@ export interface CardTableList extends Identified, Timestamped, Urls {
 
 export interface CardTable extends Identified, Timestamped, Urls {
   title: string;
-  type: "Kanban::Board";
+  type: 'Kanban::Board';
   lists?: CardTableList[];
   bucket?: BucketProjectRef;
 }
 
 export interface Step extends Identified, Timestamped, Urls {
-  status?: "active" | "archived" | "trashed";
+  status?: 'active' | 'archived' | 'trashed';
   title: string;
   completed: boolean;
   due_on?: string | null;
@@ -104,7 +104,7 @@ export interface Step extends Identified, Timestamped, Urls {
 }
 
 export interface Card extends Identified, Timestamped, Urls {
-  status?: "active" | "archived" | "trashed";
+  status?: 'active' | 'archived' | 'trashed';
   title?: string;
   name?: string;
   content?: string;
@@ -129,6 +129,43 @@ export interface Card extends Identified, Timestamped, Urls {
   bucket?: BucketProjectRef;
   steps?: Step[]; // Card steps (kanban sub-tasks)
 }
+
+export type CardListDetail = 'compact' | 'extended';
+
+export interface CompactCard {
+  id: number;
+  title: string;
+  status?: Card['status'];
+  position?: number;
+  due_on?: string | null;
+  assignees: Array<{ id: number; name: string }>;
+  comments_count: number;
+  steps: { completed: number; total: number };
+  app_url?: string;
+  updated_at?: string;
+}
+
+export interface CardListPagination {
+  page: number;
+  limit: number;
+  returned: number;
+  has_more: boolean;
+  next_page?: number;
+}
+
+export interface CompactCardListResponse {
+  detail: 'compact';
+  cards: CompactCard[];
+  pagination: CardListPagination;
+}
+
+export interface ExtendedCardListResponse {
+  detail: 'extended';
+  cards: Card[];
+  pagination: CardListPagination;
+}
+
+export type CardListResponse = CompactCardListResponse | ExtendedCardListResponse;
 
 export interface Message extends Identified, Timestamped, Urls {
   title: string;
