@@ -1,7 +1,7 @@
 # @aexol-studio/basecamp-to-llm
 
 Basecamp MCP server and CLI for AI-assisted project management. Connect your IDE (Codex, Cursor, OpenCode) to Basecamp via the Model Context Protocol.
-
+d
 Requires Node.js 20 or newer. CI tests the Node.js 20 and 22 LTS lines; newer compatible Node.js releases are not intentionally excluded.
 
 ## Features
